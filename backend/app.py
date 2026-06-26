@@ -13,6 +13,7 @@ def login_required(f):
         if "user_id" not in session:
             return jsonify({"error": "Login required"}), 401
         return f(*args, **kwargs)
+
     return decorated_function
 
 
@@ -20,6 +21,8 @@ def login_required(f):
 def home():
     return "Employee and Attendance Management System Backend is running"
 
+
+# AUTHENTICATION ROUTES
 
 @app.route("/register", methods=["POST"])
 def register():
@@ -74,6 +77,7 @@ def login():
         session["user_id"] = user["user_id"]
         session["username"] = user["username"]
         session["role"] = user["role"]
+
         return jsonify({"message": "Login successful"})
 
     return jsonify({"error": "Invalid username or password"}), 401
@@ -84,6 +88,8 @@ def logout():
     session.clear()
     return jsonify({"message": "Logout successful"})
 
+
+# EMPLOYEE CRUD ROUTES
 
 @app.route("/employees", methods=["GET"])
 @login_required
@@ -174,18 +180,15 @@ def delete_employee(id):
     return jsonify({"message": "Employee deleted successfully"})
 
 
+# ATTENDANCE CRUD ROUTES
+
 @app.route("/attendance", methods=["GET"])
 @login_required
 def get_attendance():
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
 
-    cursor.execute("""
-        SELECT attendance.*, employees.first_name, employees.last_name
-        FROM attendance
-        JOIN employees ON attendance.employee_id = employees.employee_id
-    """)
-
+    cursor.execute("SELECT * FROM attendance")
     attendance = cursor.fetchall()
 
     cursor.close()
@@ -266,6 +269,169 @@ def delete_attendance(id):
     conn.close()
 
     return jsonify({"message": "Attendance deleted successfully"})
+
+
+# PHASE 4 - REPORTING ROUTES
+
+@app.route("/reports/employees", methods=["GET"])
+@login_required
+def employee_listing_report():
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT employees.employee_id,
+               employees.first_name,
+               employees.last_name,
+               employees.email,
+               employees.phone,
+               departments.department_name
+        FROM employees
+        LEFT JOIN departments ON employees.department_id = departments.department_id
+        ORDER BY employees.employee_id ASC
+    """)
+
+    employees = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify(employees)
+
+
+@app.route("/reports/attendance", methods=["GET"])
+@login_required
+def attendance_report():
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT attendance.attendance_id,
+               employees.first_name,
+               employees.last_name,
+               attendance.date,
+               attendance.check_in_time,
+               attendance.check_out_time,
+               attendance.status
+        FROM attendance
+        JOIN employees ON attendance.employee_id = employees.employee_id
+        ORDER BY attendance.date DESC
+    """)
+
+    records = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify(records)
+
+
+@app.route("/reports/attendance/status/<status>", methods=["GET"])
+@login_required
+def attendance_by_status(status):
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT attendance.attendance_id,
+               employees.first_name,
+               employees.last_name,
+               attendance.date,
+               attendance.check_in_time,
+               attendance.check_out_time,
+               attendance.status
+        FROM attendance
+        JOIN employees ON attendance.employee_id = employees.employee_id
+        WHERE attendance.status = %s
+        ORDER BY attendance.date DESC
+    """, (status,))
+
+    records = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify(records)
+
+
+@app.route("/search/employees", methods=["GET"])
+@login_required
+def search_employees():
+    keyword = request.args.get("q", "")
+
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT employees.employee_id,
+               employees.first_name,
+               employees.last_name,
+               employees.email,
+               employees.phone,
+               departments.department_name
+        FROM employees
+        LEFT JOIN departments ON employees.department_id = departments.department_id
+        WHERE employees.first_name LIKE %s
+           OR employees.last_name LIKE %s
+           OR employees.email LIKE %s
+           OR departments.department_name LIKE %s
+        ORDER BY employees.employee_id ASC
+    """, (
+        f"%{keyword}%",
+        f"%{keyword}%",
+        f"%{keyword}%",
+        f"%{keyword}%"
+    ))
+
+    employees = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify(employees)
+
+
+@app.route("/search/attendance", methods=["GET"])
+@login_required
+def search_attendance():
+    status = request.args.get("status", "")
+    date = request.args.get("date", "")
+
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    query = """
+        SELECT attendance.attendance_id,
+               employees.first_name,
+               employees.last_name,
+               attendance.date,
+               attendance.check_in_time,
+               attendance.check_out_time,
+               attendance.status
+        FROM attendance
+        JOIN employees ON attendance.employee_id = employees.employee_id
+        WHERE 1=1
+    """
+
+    values = []
+
+    if status:
+        query += " AND attendance.status = %s"
+        values.append(status)
+
+    if date:
+        query += " AND attendance.date = %s"
+        values.append(date)
+
+    query += " ORDER BY attendance.date DESC"
+
+    cursor.execute(query, values)
+    records = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify(records)
 
 
 if __name__ == "__main__":
