@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Reports</title>
+
+    <style>
+
+        body{
+            font-family:Arial;
+            background:#f4f4f4;
+            margin:0;
+        }
+
+        .navbar{
+            background:#007BFF;
+            color:white;
+            padding:15px;
+        }
+
+        .container{
+            padding:30px;
+        }
+
+        .card{
+            background:white;
+            padding:20px;
+            margin-bottom:20px;
+            border-radius:10px;
+            box-shadow:0 0 10px rgba(0,0,0,.15);
+        }
+
+        a{
+            display:block;
+            margin:10px 0;
+            padding:12px;
+            background:#007BFF;
+            color:white;
+            text-decoration:none;
+            border-radius:5px;
+            width:300px;
+        }
+
+        a:hover{
+            background:#0056b3;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="navbar">
+
+<h2>Reports</h2>
+
+</div>
+
+<div class="container">
+
+<div class="card">
+
+<h3>Available Reports</h3>
+
+<a href="/reports/employees">Employee Listing Report</a>
+
+<a href="/reports/attendance">Attendance Report</a>
+
+<a href="/reports/attendance/status/Present">Present Employees</a>
+
+<a href="/reports/attendance/status/Absent">Absent Employees</a>
+
+<a href="/search/employees?q=John">Employee Search Example</a>
+
+<br>
+
+<a href="/">Back to Dashboard</a>
+
+</div>
+
+</div>
+
+</body>
+
+</html>

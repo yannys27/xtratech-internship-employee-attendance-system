@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify, session, render_template, redirect, url_for
 from db import get_connection
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
@@ -11,15 +11,21 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if "user_id" not in session:
-            return jsonify({"error": "Login required"}), 401
+            return redirect(url_for("login_page"))
         return f(*args, **kwargs)
-
     return decorated_function
 
 
 @app.route("/")
 def home():
-    return "Employee and Attendance Management System Backend is running"
+    if "user_id" not in session:
+        return redirect(url_for("login_page"))
+    return render_template("index.html")
+
+
+@app.route("/login-page")
+def login_page():
+    return render_template("login.html")
 
 
 # AUTHENTICATION ROUTES
@@ -56,10 +62,16 @@ def register():
 
 @app.route("/login", methods=["POST"])
 def login():
-    data = request.json
+    username = None
+    password = None
 
-    username = data.get("username")
-    password = data.get("password")
+    if request.is_json:
+        data = request.json
+        username = data.get("username")
+        password = data.get("password")
+    else:
+        username = request.form.get("username")
+        password = request.form.get("password")
 
     if not username or not password:
         return jsonify({"error": "Username and password are required"}), 400
@@ -78,15 +90,93 @@ def login():
         session["username"] = user["username"]
         session["role"] = user["role"]
 
-        return jsonify({"message": "Login successful"})
+        if request.is_json:
+            return jsonify({"message": "Login successful"})
+        return redirect(url_for("home"))
 
-    return jsonify({"error": "Invalid username or password"}), 401
+    if request.is_json:
+        return jsonify({"error": "Invalid username or password"}), 401
+
+    return render_template("login.html", error="Invalid username or password")
 
 
-@app.route("/logout", methods=["POST"])
+@app.route("/logout", methods=["GET", "POST"])
 def logout():
     session.clear()
-    return jsonify({"message": "Logout successful"})
+
+    if request.method == "POST":
+        return jsonify({"message": "Logout successful"})
+
+    return redirect(url_for("login_page"))
+
+
+# WEBSITE ROUTES
+
+@app.route("/dashboard")
+@login_required
+def dashboard():
+    return render_template("index.html")
+
+
+@app.route("/employees-page")
+@login_required
+def employees_page():
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT employees.employee_id,
+               employees.first_name,
+               employees.last_name,
+               employees.email,
+               employees.phone,
+               departments.department_name
+        FROM employees
+        LEFT JOIN departments
+        ON employees.department_id = departments.department_id
+        ORDER BY employees.employee_id ASC
+    """)
+
+    employees = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return render_template("employees.html", employees=employees)
+
+
+@app.route("/attendance-page")
+@login_required
+def attendance_page():
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT attendance.attendance_id,
+               employees.first_name,
+               employees.last_name,
+               attendance.date,
+               attendance.check_in_time,
+               attendance.check_out_time,
+               attendance.status
+        FROM attendance
+        JOIN employees
+        ON attendance.employee_id = employees.employee_id
+        ORDER BY attendance.date DESC
+    """)
+
+    attendance = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return render_template("attendance.html", attendance=attendance)
+
+
+@app.route("/reports-page")
+@login_required
+def reports_page():
+    return render_template("reports.html")
 
 
 # EMPLOYEE CRUD ROUTES

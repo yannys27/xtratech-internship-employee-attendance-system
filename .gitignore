@@ -1,0 +1,48 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# VS Code
+.vscode/
+
+# JetBrains IDEs
+.idea/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Environment variables
+.env
+
+# MySQL dump files
+*.sql.bak
+
+# Logs
+*.log
+
+# Flask cache
+instance/
+
+# Python cache
+.pytest_cache/
+
+# Distribution
+build/
+dist/
+
+# Egg files
+*.egg-info/
+
+# Bytecode
+*.py[cod]

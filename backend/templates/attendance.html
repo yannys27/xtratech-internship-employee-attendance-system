@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Attendance</title>
+
+    <style>
+
+        body{
+            font-family:Arial;
+            background:#f4f4f4;
+            margin:0;
+        }
+
+        .navbar{
+            background:#007BFF;
+            color:white;
+            padding:15px;
+        }
+
+        .container{
+            padding:30px;
+        }
+
+        table{
+            width:100%;
+            background:white;
+            border-collapse:collapse;
+        }
+
+        th,td{
+            border:1px solid #ddd;
+            padding:12px;
+            text-align:left;
+        }
+
+        th{
+            background:#007BFF;
+            color:white;
+        }
+
+        a{
+            display:inline-block;
+            margin-bottom:20px;
+            padding:10px 15px;
+            background:#007BFF;
+            color:white;
+            text-decoration:none;
+            border-radius:5px;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="navbar">
+
+<h2>Attendance Management</h2>
+
+</div>
+
+<div class="container">
+
+<a href="/">Back to Dashboard</a>
+
+<table>
+
+<tr>
+<th>ID</th>
+<th>Employee</th>
+<th>Date</th>
+<th>Check In</th>
+<th>Check Out</th>
+<th>Status</th>
+</tr>
+
+{% for record in attendance %}
+
+<tr>
+
+<td>{{ record.attendance_id }}</td>
+
+<td>{{ record.first_name }} {{ record.last_name }}</td>
+
+<td>{{ record.date }}</td>
+
+<td>{{ record.check_in_time }}</td>
+
+<td>{{ record.check_out_time }}</td>
+
+<td>{{ record.status }}</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</div>
+
+</body>
+
+</html>
