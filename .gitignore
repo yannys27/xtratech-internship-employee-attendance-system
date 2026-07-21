@@ -1,8 +1,13 @@
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
 # Python cache
 __pycache__/
+*.py[cod]
 *.pyc
 *.pyo
-*.pyd
 
 # Virtual environments
 venv/
@@ -12,37 +17,14 @@ env/
 # VS Code
 .vscode/
 
-# JetBrains IDEs
+# JetBrains
 .idea/
 
-# macOS
-.DS_Store
-
-# Windows
-Thumbs.db
-Desktop.ini
-
-# Environment variables
-.env
-
-# MySQL dump files
-*.sql.bak
-
-# Logs
+# Testing and logs
+.pytest_cache/
 *.log
 
-# Flask cache
-instance/
-
-# Python cache
-.pytest_cache/
-
-# Distribution
-build/
-dist/
-
-# Egg files
-*.egg-info/
-
-# Bytecode
-*.py[cod]
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini

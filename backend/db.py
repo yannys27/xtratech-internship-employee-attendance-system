@@ -1,9 +1,14 @@
 import mysql.connector
+from config import Config
+
 
 def get_connection():
+    Config.validate()
+
     return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="K@rel2701",
-        database="employee_attendance_system"
+        host=Config.DB_HOST,
+        port=Config.DB_PORT,
+        user=Config.DB_USER,
+        password=Config.DB_PASSWORD,
+        database=Config.DB_NAME,
     )
