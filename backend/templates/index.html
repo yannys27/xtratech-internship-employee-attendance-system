@@ -1,44 +1,158 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
     <style>
+        * { box-sizing: border-box; }
+
         body {
-            font-family: Arial;
-            background: #f4f4f4;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f4f6f9;
             margin: 0;
+            color: #222;
         }
 
         .navbar {
             background: #007BFF;
             color: white;
-            padding: 15px;
+            padding: 18px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .navbar h2 {
+            margin: 0;
+        }
+
+        .user-info {
+            text-align: right;
+            line-height: 1.5;
         }
 
         .container {
             padding: 30px;
+            max-width: 1250px;
+            margin: auto;
         }
 
-        .card {
-            background: white;
-            padding: 20px;
-            margin-bottom: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 8px rgba(0,0,0,.1);
+        .menu {
+            margin-bottom: 25px;
         }
 
-        a {
+        .menu a {
             display: inline-block;
-            margin: 10px;
-            padding: 12px 18px;
+            margin: 5px 8px 5px 0;
+            padding: 11px 16px;
             background: #007BFF;
             color: white;
             text-decoration: none;
             border-radius: 6px;
         }
 
-        a:hover {
+        .menu a:hover {
             background: #0056b3;
+        }
+
+        .menu .logout {
+            background: #dc3545;
+        }
+
+        .menu .logout:hover {
+            background: #b52a37;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 18px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 22px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,.08);
+        }
+
+        .card h3 {
+            margin: 0 0 10px;
+            font-size: 16px;
+            color: #666;
+        }
+
+        .number {
+            font-size: 34px;
+            font-weight: bold;
+            color: #007BFF;
+        }
+
+        .panel {
+            background: white;
+            padding: 22px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,.08);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background: #f2f5f8;
+        }
+
+        .status {
+            font-weight: bold;
+        }
+
+        .error, .flash-error {
+            background: #f8d7da;
+            color: #842029;
+            border: 1px solid #f5c2c7;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 18px;
+        }
+
+        .flash-success {
+            background: #d1e7dd;
+            color: #0f5132;
+            border: 1px solid #badbcc;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 18px;
+        }
+
+        @media (max-width: 650px) {
+            .navbar {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .user-info {
+                text-align: left;
+            }
+
+            .container {
+                padding: 18px;
+            }
+
+            .panel {
+                overflow-x: auto;
+            }
         }
     </style>
 </head>
@@ -47,18 +161,126 @@
 
 <div class="navbar">
     <h2>Employee and Attendance Management System</h2>
+
+    <div class="user-info">
+        <strong>{{ username }}</strong><br>
+        {{ role }}
+    </div>
 </div>
 
 <div class="container">
 
-    <div class="card">
-        <h3>Dashboard</h3>
-        <p>Welcome to the management system.</p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
 
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% endif %}
+
+    <div class="menu">
         <a href="/employees-page">Employee Management</a>
+
         <a href="/attendance-page">Attendance Management</a>
+
         <a href="/reports-page">Reports</a>
-        <a href="/logout">Logout</a>
+
+        {% if role == 'Administrator' %}
+            <a href="/users-page">User Management</a>
+        {% endif %}
+
+        <a class="logout" href="/logout">Logout</a>
+    </div>
+
+    <div class="cards">
+
+        <div class="card">
+            <h3>Total Employees</h3>
+            <div class="number">
+                {{ stats.total_employees }}
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Employees Present Today</h3>
+            <div class="number">
+                {{ stats.present_today }}
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Employees Absent Today</h3>
+            <div class="number">
+                {{ stats.absent_today }}
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Attendance Records This Week</h3>
+            <div class="number">
+                {{ stats.weekly_attendance }}
+            </div>
+        </div>
+
+    </div>
+
+    <div class="panel">
+
+        <h2>Recent Attendance Activities</h2>
+
+        {% if recent_activities %}
+
+            <table>
+
+                <tr>
+                    <th>Employee</th>
+                    <th>Date</th>
+                    <th>Check In</th>
+                    <th>Check Out</th>
+                    <th>Status</th>
+                </tr>
+
+                {% for record in recent_activities %}
+
+                <tr>
+
+                    <td>
+                        {{ record.first_name }}
+                        {{ record.last_name }}
+                    </td>
+
+                    <td>
+                        {{ record.date }}
+                    </td>
+
+                    <td>
+                        {{ record.check_in_time or '-' }}
+                    </td>
+
+                    <td>
+                        {{ record.check_out_time or '-' }}
+                    </td>
+
+                    <td class="status">
+                        {{ record.status }}
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </table>
+
+        {% else %}
+
+            <p>
+                No attendance activity has been recorded yet.
+            </p>
+
+        {% endif %}
+
     </div>
 
 </div>
