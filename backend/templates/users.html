@@ -1,14 +1,19 @@
 <!DOCTYPE html>
+
 <html lang="en">
 
 <head>
 
     <meta charset="UTF-8">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
 
-    <title>User Management</title>
+    <title>
+        User Management
+    </title>
+
 
     <style>
 
@@ -16,307 +21,531 @@
             box-sizing: border-box;
         }
 
+
         body {
-            font-family: Arial, Helvetica, sans-serif;
+
+            font-family:
+            Arial,
+            Helvetica,
+            sans-serif;
+
             background: #f4f6f9;
+
             margin: 0;
+
             color: #222;
+
         }
+
 
         .navbar {
+
             background: #007BFF;
+
             color: white;
+
             padding: 18px 30px;
+
             display: flex;
+
             justify-content: space-between;
+
             align-items: center;
+
         }
+
 
         .navbar h2 {
+
             margin: 0;
+
         }
+
 
         .container {
+
             padding: 30px;
+
             max-width: 1400px;
+
             margin: auto;
+
         }
+
 
         .back {
+
             display: inline-block;
+
             margin-bottom: 20px;
+
             padding: 10px 15px;
+
             background: #007BFF;
+
             color: white;
+
             text-decoration: none;
+
             border-radius: 5px;
+
         }
+
 
         .panel {
+
             background: white;
+
             padding: 22px;
+
             margin-bottom: 25px;
+
             border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,.08);
+
+            box-shadow:
+            0 2px 10px rgba(0,0,0,.08);
+
         }
+
 
         .create-grid {
+
             display: grid;
-            grid-template-columns: 1.2fr 1.2fr 1fr auto;
+
+            grid-template-columns:
+            1.2fr
+            1.2fr
+            1fr
+            auto;
+
             gap: 12px;
+
             align-items: end;
+
         }
+
 
         label {
+
             display: block;
+
             font-weight: bold;
+
             margin-bottom: 6px;
+
         }
 
-        input, select {
+
+        input,
+        select {
+
             width: 100%;
+
             padding: 10px;
+
             border: 1px solid #ccc;
+
             border-radius: 5px;
+
         }
+
 
         button {
+
             padding: 10px 14px;
+
             border: none;
+
             border-radius: 5px;
+
             color: white;
+
             cursor: pointer;
+
             background: #007BFF;
+
         }
 
+
         button:hover {
+
             opacity: .9;
+
         }
+
 
         .green {
             background: #198754;
         }
 
+
         .orange {
             background: #fd7e14;
         }
+
 
         .red {
             background: #dc3545;
         }
 
+
         .gray {
             background: #6c757d;
         }
 
+
         table {
+
             width: 100%;
+
             border-collapse: collapse;
+
         }
 
-        th, td {
+
+        th,
+        td {
+
             padding: 12px;
-            border-bottom: 1px solid #ddd;
+
+            border-bottom:
+            1px solid #ddd;
+
             text-align: left;
+
             vertical-align: top;
+
         }
+
 
         th {
+
             background: #f2f5f8;
+
         }
 
+
         .inline-form {
+
             display: flex;
+
             gap: 7px;
+
             align-items: center;
+
             margin-bottom: 7px;
+
         }
+
 
         .inline-form input,
         .inline-form select {
+
             min-width: 120px;
+
         }
+
 
         .badge {
+
             display: inline-block;
+
             padding: 5px 9px;
+
             border-radius: 12px;
+
             color: white;
+
             font-size: 13px;
+
             font-weight: bold;
+
         }
+
 
         .active {
+
             background: #198754;
+
         }
+
 
         .inactive {
+
             background: #6c757d;
+
         }
 
+
         .flash-success {
+
             background: #d1e7dd;
+
             color: #0f5132;
-            border: 1px solid #badbcc;
+
+            border:
+            1px solid #badbcc;
+
             padding: 12px;
+
             border-radius: 6px;
+
             margin-bottom: 18px;
+
         }
+
 
         .flash-error,
         .error {
+
             background: #f8d7da;
+
             color: #842029;
-            border: 1px solid #f5c2c7;
+
+            border:
+            1px solid #f5c2c7;
+
             padding: 12px;
+
             border-radius: 6px;
+
             margin-bottom: 18px;
+
         }
+
 
         .note {
+
             color: #666;
+
             font-size: 13px;
+
         }
 
-        @media (max-width: 900px) {
+
+        @media
+        (max-width: 900px) {
+
 
             .create-grid {
+
                 grid-template-columns: 1fr;
+
             }
+
 
             .panel {
+
                 overflow-x: auto;
+
             }
 
+
             .inline-form {
+
                 min-width: 380px;
+
             }
+
         }
 
     </style>
 
 </head>
 
+
 <body>
+
 
 <div class="navbar">
 
-    <h2>User Management</h2>
+
+    <h2>
+        User Management
+    </h2>
+
 
     <div>
-        {{ username }} — Administrator
+
+        {{ username }}
+        —
+        Administrator
+
     </div>
+
 
 </div>
 
+
 <div class="container">
 
-    <a class="back"
-       href="/dashboard">
+
+    <a
+        class="back"
+        href="/dashboard">
+
         Back to Dashboard
+
     </a>
 
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% with messages =
+        get_flashed_messages(
+        with_categories=true) %}
 
-        {% for category, message in messages %}
 
-            <div class="flash-{{ category }}">
+        {% for category, message
+            in messages %}
+
+
+            <div
+                class="flash-{{ category }}">
+
                 {{ message }}
+
             </div>
 
+
         {% endfor %}
+
 
     {% endwith %}
 
 
     {% if error %}
 
+
         <div class="error">
+
             {{ error }}
+
         </div>
+
 
     {% endif %}
 
 
+    <!-- CREATE USER -->
+
+
     <div class="panel">
 
-        <h2>Create New User</h2>
+
+        <h2>
+            Create New User
+        </h2>
 
 
-        <form action="/users/create"
-              method="POST"
-              class="create-grid">
+        <form
+
+            action="/users/create"
+
+            method="POST"
+
+            class="create-grid">
 
 
             <div>
+
 
                 <label>
                     Username
                 </label>
 
+
                 <input
+
                     type="text"
+
                     name="username"
+
                     minlength="3"
+
                     maxlength="50"
+
                     required>
+
 
             </div>
 
 
             <div>
+
 
                 <label>
                     Password
                 </label>
 
+
                 <input
+
                     type="password"
+
                     name="password"
+
                     minlength="8"
+
                     required>
+
 
             </div>
 
 
             <div>
 
+
                 <label>
                     Role
                 </label>
+
 
                 <select
                     name="role"
                     required>
 
+
                     {% for role in roles %}
 
-                        <option value="{{ role }}">
+
+                        <option
+                            value="{{ role }}">
+
                             {{ role }}
+
                         </option>
+
 
                     {% endfor %}
 
+
                 </select>
+
 
             </div>
 
 
             <button
+
                 class="green"
+
                 type="submit">
 
                 Create User
 
             </button>
 
+
         </form>
+
 
     </div>
 
 
+    <!-- EXISTING USERS -->
+
+
     <div class="panel">
+
 
         <h2>
             Existing Users
@@ -325,7 +554,8 @@
 
         <p class="note">
 
-            Administrators can create, edit,
+            Administrators can create,
+            edit,
             change passwords,
             activate/deactivate
             and delete users.
@@ -335,23 +565,34 @@
 
         <table>
 
+
             <tr>
 
-                <th>ID</th>
+
+                <th>
+                    ID
+                </th>
+
 
                 <th>
                     Username / Role
                 </th>
 
-                <th>Status</th>
+
+                <th>
+                    Status
+                </th>
+
 
                 <th>
                     Change Password
                 </th>
 
+
                 <th>
                     Account Actions
                 </th>
+
 
             </tr>
 
@@ -363,7 +604,9 @@
 
 
                 <td>
+
                     {{ user.user_id }}
+
                 </td>
 
 
@@ -371,17 +614,26 @@
 
 
                     <form
+
                         action="/users/{{ user.user_id }}/edit"
+
                         method="POST"
+
                         class="inline-form">
 
 
                         <input
+
                             type="text"
+
                             name="username"
+
                             value="{{ user.username }}"
+
                             minlength="3"
+
                             maxlength="50"
+
                             required>
 
 
@@ -390,17 +642,27 @@
                             required>
 
 
-                            {% for available_role in roles %}
+                            {% for available_role
+                                in roles %}
 
 
                                 <option
+
                                     value="{{ available_role }}"
 
-                                    {% if user.role == available_role %}
-                                        selected
+                                    {% if
+                                    user.role
+                                    ==
+                                    available_role
+                                    %}
+
+                                    selected
+
                                     {% endif %}>
 
+
                                     {{ available_role }}
+
 
                                 </option>
 
@@ -411,19 +673,27 @@
                         </select>
 
 
-                        <button type="submit">
+                        <button
+                            type="submit">
+
                             Save
+
                         </button>
 
 
                     </form>
 
 
-                    {% if user.user_id == current_user_id %}
+                    {% if
+                    user.user_id
+                    ==
+                    current_user_id %}
 
 
                         <span class="note">
+
                             This is your account.
+
                         </span>
 
 
@@ -439,16 +709,22 @@
                     {% if user.is_active %}
 
 
-                        <span class="badge active">
+                        <span
+                            class="badge active">
+
                             Active
+
                         </span>
 
 
                     {% else %}
 
 
-                        <span class="badge inactive">
+                        <span
+                            class="badge inactive">
+
                             Inactive
+
                         </span>
 
 
@@ -462,21 +738,31 @@
 
 
                     <form
+
                         action="/users/{{ user.user_id }}/password"
+
                         method="POST"
+
                         class="inline-form">
 
 
                         <input
+
                             type="password"
+
                             name="password"
+
                             minlength="8"
+
                             placeholder="New password"
+
                             required>
 
 
                         <button
+
                             class="orange"
+
                             type="submit">
 
                             Change
@@ -493,20 +779,29 @@
                 <td>
 
 
-                    {% if user.user_id != current_user_id %}
+                    {% if
+                    user.user_id
+                    !=
+                    current_user_id %}
 
 
                         <form
+
                             action="/users/{{ user.user_id }}/toggle"
+
                             method="POST"
+
                             class="inline-form">
 
 
-                            {% if user.is_active %}
+                            {% if
+                            user.is_active %}
 
 
                                 <button
+
                                     class="gray"
+
                                     type="submit">
 
                                     Deactivate
@@ -518,7 +813,9 @@
 
 
                                 <button
+
                                     class="green"
+
                                     type="submit">
 
                                     Activate
@@ -533,16 +830,21 @@
 
 
                         <form
+
                             action="/users/{{ user.user_id }}/delete"
+
                             method="POST"
 
-                            onsubmit="return confirm(
+                            onsubmit="
+                            return confirm(
                             'Are you sure you want to delete this user?'
                             );">
 
 
                             <button
+
                                 class="red"
+
                                 type="submit">
 
                                 Delete
@@ -578,9 +880,12 @@
 
         </table>
 
+
     </div>
 
+
 </div>
+
 
 </body>
 

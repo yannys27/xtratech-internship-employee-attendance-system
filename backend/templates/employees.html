@@ -1,8 +1,13 @@
 <!DOCTYPE html>
+
 <html>
+
 <head>
+
     <title>Employees</title>
+
     <style>
+
         body {
             font-family: Arial;
             background: #f4f4f4;
@@ -25,7 +30,8 @@
             border-collapse: collapse;
         }
 
-        th, td {
+        th,
+        td {
             padding: 12px;
             border: 1px solid #ddd;
             text-align: left;
@@ -45,42 +51,105 @@
             text-decoration: none;
             border-radius: 5px;
         }
+
     </style>
+
 </head>
+
 
 <body>
 
+
 <div class="navbar">
-    <h2>Employee Management</h2>
+
+    <h2>
+        Employee Management
+    </h2>
+
 </div>
+
 
 <div class="container">
 
-    <a href="/">Back to Dashboard</a>
+
+    <a href="/">
+        Back to Dashboard
+    </a>
+
 
     <table>
+
+
         <tr>
-            <th>ID</th>
-            <th>First Name</th>
-            <th>Last Name</th>
-            <th>Email</th>
-            <th>Phone</th>
-            <th>Department</th>
+
+            <th>
+                ID
+            </th>
+
+            <th>
+                First Name
+            </th>
+
+            <th>
+                Last Name
+            </th>
+
+            <th>
+                Email
+            </th>
+
+            <th>
+                Phone
+            </th>
+
+            <th>
+                Department
+            </th>
+
         </tr>
 
+
         {% for employee in employees %}
+
+
         <tr>
-            <td>{{ employee.employee_id }}</td>
-            <td>{{ employee.first_name }}</td>
-            <td>{{ employee.last_name }}</td>
-            <td>{{ employee.email }}</td>
-            <td>{{ employee.phone }}</td>
-            <td>{{ employee.department_name }}</td>
+
+            <td>
+                {{ employee.employee_id }}
+            </td>
+
+            <td>
+                {{ employee.first_name }}
+            </td>
+
+            <td>
+                {{ employee.last_name }}
+            </td>
+
+            <td>
+                {{ employee.email }}
+            </td>
+
+            <td>
+                {{ employee.phone }}
+            </td>
+
+            <td>
+                {{ employee.department_name }}
+            </td>
+
         </tr>
+
+
         {% endfor %}
+
+
     </table>
+
 
 </div>
 
+
 </body>
+
 </html>

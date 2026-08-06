@@ -1,85 +1,883 @@
 <!DOCTYPE html>
-<html>
+
+<html lang="en">
 
 <head>
-    <title>Reports</title>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>
+        Attendance Reports
+    </title>
+
 
     <style>
 
-        body{
-            font-family:Arial;
-            background:#f4f4f4;
-            margin:0;
+        * {
+            box-sizing: border-box;
         }
 
-        .navbar{
-            background:#007BFF;
-            color:white;
-            padding:15px;
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f4f6f9;
+            margin: 0;
+            color: #222;
         }
 
-        .container{
-            padding:30px;
+
+        .navbar {
+
+            background: #007BFF;
+            color: white;
+
+            padding: 18px 30px;
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
         }
 
-        .card{
-            background:white;
-            padding:20px;
-            margin-bottom:20px;
-            border-radius:10px;
-            box-shadow:0 0 10px rgba(0,0,0,.15);
+
+        .navbar h2 {
+            margin: 0;
         }
 
-        a{
-            display:block;
-            margin:10px 0;
-            padding:12px;
-            background:#007BFF;
-            color:white;
-            text-decoration:none;
-            border-radius:5px;
-            width:300px;
+
+        .container {
+
+            max-width: 1400px;
+
+            margin: auto;
+
+            padding: 30px;
+
         }
 
-        a:hover{
-            background:#0056b3;
+
+        .button {
+
+            display: inline-block;
+
+            padding: 10px 15px;
+
+            border-radius: 6px;
+
+            color: white;
+
+            background: #007BFF;
+
+            text-decoration: none;
+
+            border: 0;
+
+            cursor: pointer;
+
+        }
+
+
+        .button:hover {
+            opacity: .9;
+        }
+
+
+        .button.green {
+            background: #198754;
+        }
+
+
+        .button.gray {
+            background: #6c757d;
+        }
+
+
+        .button.red {
+            background: #dc3545;
+        }
+
+
+        .panel {
+
+            background: white;
+
+            padding: 22px;
+
+            border-radius: 10px;
+
+            box-shadow: 0 2px 10px rgba(0,0,0,.08);
+
+            margin-top: 22px;
+
+        }
+
+
+        .filters {
+
+            display: grid;
+
+            grid-template-columns:
+
+                1.5fr
+                1.2fr
+                1fr
+                1fr
+                1fr;
+
+            gap: 14px;
+
+            align-items: end;
+
+        }
+
+
+        label {
+
+            display: block;
+
+            font-weight: bold;
+
+            margin-bottom: 6px;
+
+        }
+
+
+        input,
+        select {
+
+            width: 100%;
+
+            padding: 10px;
+
+            border: 1px solid #cfd4da;
+
+            border-radius: 5px;
+
+            background: white;
+
+        }
+
+
+        .filter-actions,
+        .export-actions {
+
+            display: flex;
+
+            gap: 10px;
+
+            flex-wrap: wrap;
+
+            margin-top: 18px;
+
+        }
+
+
+        table {
+
+            width: 100%;
+
+            border-collapse: collapse;
+
+            margin-top: 18px;
+
+        }
+
+
+        th,
+        td {
+
+            padding: 12px;
+
+            border-bottom: 1px solid #ddd;
+
+            text-align: left;
+
+        }
+
+
+        th {
+            background: #eef2f6;
+        }
+
+
+        .error,
+        .flash-error {
+
+            background: #f8d7da;
+
+            color: #842029;
+
+            border: 1px solid #f5c2c7;
+
+            padding: 12px;
+
+            border-radius: 6px;
+
+            margin: 15px 0;
+
+        }
+
+
+        .flash-success {
+
+            background: #d1e7dd;
+
+            color: #0f5132;
+
+            border: 1px solid #badbcc;
+
+            padding: 12px;
+
+            border-radius: 6px;
+
+            margin: 15px 0;
+
+        }
+
+
+        .summary {
+
+            color: #666;
+
+            margin: 8px 0 0;
+
+        }
+
+
+        @media (max-width: 1000px) {
+
+            .filters {
+
+                grid-template-columns:
+                    1fr
+                    1fr;
+
+            }
+
+            .panel {
+                overflow-x: auto;
+            }
+
+        }
+
+
+        @media (max-width: 620px) {
+
+            .filters {
+
+                grid-template-columns:
+                    1fr;
+
+            }
+
+            .container {
+                padding: 18px;
+            }
+
         }
 
     </style>
 
 </head>
 
+
 <body>
+
 
 <div class="navbar">
 
-<h2>Reports</h2>
+
+    <h2>
+        Attendance Reports
+    </h2>
+
+
+    <div>
+
+        <strong>
+            {{ username }}
+        </strong>
+
+        —
+
+        {{ role }}
+
+    </div>
+
 
 </div>
+
 
 <div class="container">
 
-<div class="card">
 
-<h3>Available Reports</h3>
+    <a
+        class="button"
+        href="/dashboard">
 
-<a href="/reports/employees">Employee Listing Report</a>
+        Back to Dashboard
 
-<a href="/reports/attendance">Attendance Report</a>
+    </a>
 
-<a href="/reports/attendance/status/Present">Present Employees</a>
 
-<a href="/reports/attendance/status/Absent">Absent Employees</a>
+    {% with messages =
+        get_flashed_messages(
+        with_categories=true) %}
 
-<a href="/search/employees?q=John">Employee Search Example</a>
 
-<br>
+        {% for category, message
+            in messages %}
 
-<a href="/">Back to Dashboard</a>
+
+            <div class="flash-{{ category }}">
+
+                {{ message }}
+
+            </div>
+
+
+        {% endfor %}
+
+
+    {% endwith %}
+
+
+    {% if error %}
+
+
+        <div class="error">
+
+            {{ error }}
+
+        </div>
+
+
+    {% endif %}
+
+
+    <!-- TASK 4 -->
+
+
+    <div class="panel">
+
+
+        <h2>
+            Search and Filtering
+        </h2>
+
+
+        <p>
+
+            Filter attendance records by
+            employee name,
+            department,
+            date range
+            or attendance status.
+
+        </p>
+
+
+        <form
+            method="GET"
+            action="/reports-page">
+
+
+            <div class="filters">
+
+
+                <!-- Employee -->
+
+
+                <div>
+
+                    <label
+                        for="employee_name">
+
+                        Employee Name
+
+                    </label>
+
+
+                    <input
+
+                        id="employee_name"
+
+                        name="employee_name"
+
+                        type="text"
+
+                        maxlength="100"
+
+                        value="{{ filters.employee_name or '' }}"
+
+                        placeholder="e.g. John Smith">
+
+                </div>
+
+
+                <!-- Department -->
+
+
+                <div>
+
+                    <label
+                        for="department_id">
+
+                        Department
+
+                    </label>
+
+
+                    <select
+
+                        id="department_id"
+
+                        name="department_id">
+
+
+                        <option value="">
+
+                            All departments
+
+                        </option>
+
+
+                        {% for department
+                            in departments %}
+
+
+                            <option
+
+                                value="{{ department.department_id }}"
+
+                                {% if
+                                filters.department_id|string
+                                ==
+                                department.department_id|string
+                                %}
+
+                                selected
+
+                                {% endif %}>
+
+
+                                {{
+                                department.department_name
+                                }}
+
+
+                            </option>
+
+
+                        {% endfor %}
+
+
+                    </select>
+
+                </div>
+
+
+                <!-- Start Date -->
+
+
+                <div>
+
+                    <label
+                        for="date_from">
+
+                        From Date
+
+                    </label>
+
+
+                    <input
+
+                        id="date_from"
+
+                        name="date_from"
+
+                        type="date"
+
+                        value="{{ filters.date_from or '' }}">
+
+                </div>
+
+
+                <!-- End Date -->
+
+
+                <div>
+
+                    <label
+                        for="date_to">
+
+                        To Date
+
+                    </label>
+
+
+                    <input
+
+                        id="date_to"
+
+                        name="date_to"
+
+                        type="date"
+
+                        value="{{ filters.date_to or '' }}">
+
+                </div>
+
+
+                <!-- Status -->
+
+
+                <div>
+
+                    <label
+                        for="status">
+
+                        Status
+
+                    </label>
+
+
+                    <select
+                        id="status"
+                        name="status">
+
+
+                        <option value="">
+
+                            All statuses
+
+                        </option>
+
+
+                        <option
+
+                            value="Present"
+
+                            {% if
+                            filters.status == 'Present'
+                            %}
+
+                            selected
+
+                            {% endif %}>
+
+                            Present
+
+                        </option>
+
+
+                        <option
+
+                            value="Absent"
+
+                            {% if
+                            filters.status == 'Absent'
+                            %}
+
+                            selected
+
+                            {% endif %}>
+
+                            Absent
+
+                        </option>
+
+
+                        <option
+
+                            value="Late"
+
+                            {% if
+                            filters.status == 'Late'
+                            %}
+
+                            selected
+
+                            {% endif %}>
+
+                            Late
+
+                        </option>
+
+
+                    </select>
+
+                </div>
+
+
+            </div>
+
+
+            <div class="filter-actions">
+
+
+                <button
+
+                    class="button green"
+
+                    type="submit">
+
+                    Apply Filters
+
+                </button>
+
+
+                <a
+
+                    class="button gray"
+
+                    href="/reports-page">
+
+                    Clear Filters
+
+                </a>
+
+
+            </div>
+
+
+        </form>
+
+
+    </div>
+
+
+    <!-- TASK 5 -->
+
+
+    <div class="panel">
+
+
+        <h2>
+            Report Export
+        </h2>
+
+
+        <p>
+
+            Exports use the same filters
+            currently applied above.
+
+        </p>
+
+
+        <div class="export-actions">
+
+
+            <a
+
+                class="button red"
+
+                href="/reports/attendance/export/pdf{% if export_query %}?{{ export_query }}{% endif %}">
+
+                Export PDF
+
+            </a>
+
+
+            <a
+
+                class="button green"
+
+                href="/reports/attendance/export/xlsx{% if export_query %}?{{ export_query }}{% endif %}">
+
+                Export Excel (.xlsx)
+
+            </a>
+
+
+            <a
+
+                class="button"
+
+                href="/reports/attendance/export/csv{% if export_query %}?{{ export_query }}{% endif %}">
+
+                Export CSV
+
+            </a>
+
+
+        </div>
+
+
+    </div>
+
+
+    <!-- Results -->
+
+
+    <div class="panel">
+
+
+        <h2>
+            Attendance Results
+        </h2>
+
+
+        <p class="summary">
+
+            {{ records|length }}
+            record(s) found.
+
+        </p>
+
+
+        <table>
+
+
+            <thead>
+
+
+                <tr>
+
+
+                    <th>
+                        Employee
+                    </th>
+
+
+                    <th>
+                        Department
+                    </th>
+
+
+                    <th>
+                        Date
+                    </th>
+
+
+                    <th>
+                        Check In
+                    </th>
+
+
+                    <th>
+                        Check Out
+                    </th>
+
+
+                    <th>
+                        Status
+                    </th>
+
+
+                </tr>
+
+
+            </thead>
+
+
+            <tbody>
+
+
+                {% for record
+                    in records %}
+
+
+                    <tr>
+
+
+                        <td>
+
+                            {{ record.first_name }}
+                            {{ record.last_name }}
+
+                        </td>
+
+
+                        <td>
+
+                            {{
+                                record.department_name
+                                or '-'
+                            }}
+
+                        </td>
+
+
+                        <td>
+
+                            {{ record.date }}
+
+                        </td>
+
+
+                        <td>
+
+                            {{
+                                record.check_in_time
+                                or '-'
+                            }}
+
+                        </td>
+
+
+                        <td>
+
+                            {{
+                                record.check_out_time
+                                or '-'
+                            }}
+
+                        </td>
+
+
+                        <td>
+
+                            <strong>
+
+                                {{ record.status }}
+
+                            </strong>
+
+                        </td>
+
+
+                    </tr>
+
+
+                {% else %}
+
+
+                    <tr>
+
+
+                        <td colspan="6">
+
+                            No attendance records
+                            match the selected filters.
+
+                        </td>
+
+
+                    </tr>
+
+
+                {% endfor %}
+
+
+            </tbody>
+
+
+        </table>
+
+
+    </div>
+
 
 </div>
 
-</div>
 
 </body>
 

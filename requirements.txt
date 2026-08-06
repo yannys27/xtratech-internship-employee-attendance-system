@@ -2,3 +2,5 @@ Flask
 mysql-connector-python
 python-dotenv
 Werkzeug
+openpyxl
+reportlab

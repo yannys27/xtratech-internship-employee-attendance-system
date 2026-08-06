@@ -1,148 +1,171 @@
-# Employee and Attendance Management System
+Employee and Attendance Management System
 
-## Overview
+Overview
 
-This project was developed as part of my internship at Xtratech.
+This project was developed as part of my internship at Xtratech. It is a web-based Employee and Attendance Management System built with Python, Flask and MySQL.
 
-The system is a web-based Employee and Attendance Management System built using Python, Flask, and MySQL. It allows administrators to manage employees, attendance records, user authentication, and reporting features.
+Technologies Used
 
----
+Python 3
 
-# Technologies Used
+Flask
 
-- Python 3
-- Flask
-- MySQL
-- MySQL Workbench
-- SQL
-- Git
-- GitHub
-- Visual Studio Code
+MySQL / MySQL Workbench
 
----
+Werkzeug password hashing
 
-# Project Structure
+OpenPyXL for Excel report export
 
-```
-employee-attendance-system
-│
-├── backend
-│   ├── app.py
-│   └── db.py
-│
-├── database.sql
-├── TECHNICAL_DOCUMENTATION.md
-├── USER_GUIDE.md
-├── README.md
-└── .gitignore
-```
+ReportLab for PDF report export
 
----
+HTML/CSS
 
-# Features
+Git and GitHub
 
-## Employee Management
+Visual Studio Code
 
-- Add employees
-- View employees
-- Update employees
-- Delete employees
+Main Features
 
----
+Employee Management
 
-## Attendance Management
+View, create, update and delete employees through protected endpoints.
 
-- Add attendance
-- View attendance
-- Update attendance
-- Delete attendance
+Email, phone and required-field validation.
 
----
+Attendance Management
 
-## Authentication
+View, create, update and delete attendance records.
 
-- User registration
-- User login
-- User logout
-- Password hashing
-- Session management
+Validation for employee, date, time and status fields.
 
----
+Authentication and User Management
 
-## Reporting
+Session-based login and logout.
 
-- Employee listing
-- Attendance reports
-- Employee search
-- Attendance filtering
+Password hashing.
 
----
+Administrator and HR Officer roles.
 
-# Database
+Administrators can create, edit, activate/deactivate and delete users.
+
+Administrator-only routes are protected on the server.
+
+Dashboard
+
+Total employees.
+
+Employees present today.
+
+Employees absent today.
+
+Attendance records for the current week.
+
+Recent attendance activities.
+
+Search and Filtering
+
+Attendance reports can be filtered by:
+
+Employee name.
+
+Department.
+
+Start and end date.
+
+Attendance status.
+
+Report Export
+
+Filtered attendance reports can be exported as:
+
+PDF.
+
+Excel (.xlsx).
+
+CSV.
+
+Audit Log
+
+The system records important activities such as:
+
+User login and logout.
+
+User creation, modification, password change, activation/deactivation and deletion.
+
+Employee creation, update and deletion.
+
+Attendance record creation, update and deletion.
+
+Report exports.
+
+Each audit entry stores the username, action, date/time and additional relevant information.
+
+Database
 
 Database name:
 
-```
 employee_attendance_system
-```
 
 Tables:
 
-- users
-- departments
-- employees
-- attendance
+users
 
----
+departments
 
-# Installation
+employees
 
-Clone the repository:
+attendance
 
-```bash
-git clone https://github.com/yannys27/xtratech-internship-employee-attendance-system.git
-```
+audit_log
 
-Open the project:
+Phase 6 Existing Database Update
 
-```bash
-cd xtratech-internship-employee-attendance-system
-```
+For an existing database, do not run database.sql again. Run the Phase 6 update script once:
 
-Install the required packages:
+SOURCE phase6_tasks4_7.sql;
 
-```bash
-py -m pip install flask mysql-connector-python werkzeug
-```
+Or open phase6_tasks4_7.sql in MySQL Workbench and execute it.
+
+Installation
+
+Install the required Python packages from the project root:
+
+py -m pip install -r requirements.txt
 
 Start the application:
 
-```bash
 cd backend
 py app.py
-```
 
-Open your browser:
+Open:
 
-```
 http://127.0.0.1:5000
-```
 
----
+Main Web Pages
 
-# API Endpoints
+/dashboard - Dashboard
 
-### Authentication
+/employees-page - Employee Management
+
+/attendance-page - Attendance Management
+
+/reports-page - Filterable reports and exports
+
+/users-page - Administrator-only User Management
+
+/audit-log - Administrator-only Audit Log
+
+API Endpoints
+
+Authentication
 
 POST /register
 
 POST /login
 
-POST /logout
+GET|POST /logout
 
----
-
-### Employees
+Employees
 
 GET /employees
 
@@ -152,9 +175,7 @@ PUT /employees/<id>
 
 DELETE /employees/<id>
 
----
-
-### Attendance
+Attendance
 
 GET /attendance
 
@@ -164,9 +185,7 @@ PUT /attendance/<id>
 
 DELETE /attendance/<id>
 
----
-
-### Reports
+Reports
 
 GET /reports/employees
 
@@ -174,26 +193,30 @@ GET /reports/attendance
 
 GET /reports/attendance/status/<status>
 
+GET /reports/attendance/export/pdf
+
+GET /reports/attendance/export/xlsx
+
+GET /reports/attendance/export/csv
+
 GET /search/employees
 
 GET /search/attendance
 
----
+Security and Validation
 
-# Security
+Passwords are stored as hashes.
 
-- Password hashing
-- Protected routes
-- Session authentication
-- SQL Injection protection using parameterized queries
-- Input validation
+Protected routes require a valid session.
 
----
+Administrator permissions are checked in the backend.
 
-# Author
+SQL queries use parameters.
 
-Karel Dos Santos
+Email, phone, required fields, roles, dates, times and attendance statuses are validated.
 
-Internship Project – Xtratech
+User-friendly validation messages are returned for invalid input.
 
-2026
+Author
+
+Karel Dos SantosInternship Project - Xtratech2026

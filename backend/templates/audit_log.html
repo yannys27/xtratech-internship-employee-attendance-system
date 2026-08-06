@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>
+        Audit Log
+    </title>
+
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        body {
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            margin: 0;
+
+            background: #f4f6f9;
+
+            color: #222;
+
+        }
+
+
+        .navbar {
+
+            background: #007BFF;
+
+            color: white;
+
+            padding: 18px 30px;
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+        }
+
+
+        .navbar h2 {
+
+            margin: 0;
+
+        }
+
+
+        .container {
+
+            max-width: 1450px;
+
+            margin: auto;
+
+            padding: 30px;
+
+        }
+
+
+        .button {
+
+            display: inline-block;
+
+            padding: 10px 15px;
+
+            background: #007BFF;
+
+            color: white;
+
+            text-decoration: none;
+
+            border-radius: 6px;
+
+        }
+
+
+        .button:hover {
+
+            background: #0056b3;
+
+        }
+
+
+        .panel {
+
+            background: white;
+
+            padding: 22px;
+
+            margin-top: 22px;
+
+            border-radius: 10px;
+
+            box-shadow:
+                0 2px 10px
+                rgba(0,0,0,.08);
+
+            overflow-x: auto;
+
+        }
+
+
+        table {
+
+            width: 100%;
+
+            border-collapse: collapse;
+
+            margin-top: 15px;
+
+        }
+
+
+        th,
+        td {
+
+            padding: 12px;
+
+            border-bottom:
+                1px solid #ddd;
+
+            text-align: left;
+
+            vertical-align: top;
+
+        }
+
+
+        th {
+
+            background: #eef2f6;
+
+        }
+
+
+        .error {
+
+            background: #f8d7da;
+
+            color: #842029;
+
+            border:
+                1px solid #f5c2c7;
+
+            padding: 12px;
+
+            border-radius: 6px;
+
+            margin-top: 18px;
+
+        }
+
+
+        .details {
+
+            max-width: 600px;
+
+            white-space: normal;
+
+            overflow-wrap: anywhere;
+
+        }
+
+
+        .muted {
+
+            color: #666;
+
+        }
+
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="navbar">
+
+
+    <h2>
+        Audit Log
+    </h2>
+
+
+    <div>
+
+        <strong>
+            {{ username }}
+        </strong>
+
+        —
+
+        {{ role }}
+
+    </div>
+
+
+</div>
+
+
+<div class="container">
+
+
+    <a
+        class="button"
+        href="/dashboard">
+
+        Back to Dashboard
+
+    </a>
+
+
+    {% if error %}
+
+
+        <div class="error">
+
+            {{ error }}
+
+        </div>
+
+
+    {% endif %}
+
+
+    <div class="panel">
+
+
+        <h2>
+            Recent System Activities
+        </h2>
+
+
+        <p class="muted">
+
+            The latest 200 audit entries
+            are shown.
+
+            Only Administrators can access
+            this page.
+
+        </p>
+
+
+        <table>
+
+
+            <thead>
+
+
+                <tr>
+
+
+                    <th>
+                        ID
+                    </th>
+
+
+                    <th>
+                        Username
+                    </th>
+
+
+                    <th>
+                        Action
+                    </th>
+
+
+                    <th>
+                        Date and Time
+                    </th>
+
+
+                    <th>
+                        Additional Information
+                    </th>
+
+
+                </tr>
+
+
+            </thead>
+
+
+            <tbody>
+
+
+                {% for log in logs %}
+
+
+                    <tr>
+
+
+                        <td>
+
+                            {{ log.audit_id }}
+
+                        </td>
+
+
+                        <td>
+
+                            {{ log.username }}
+
+                        </td>
+
+
+                        <td>
+
+                            <strong>
+
+                                {{ log.action }}
+
+                            </strong>
+
+                        </td>
+
+
+                        <td>
+
+                            {{ log.created_at }}
+
+                        </td>
+
+
+                        <td class="details">
+
+                            {{ log.details or '-' }}
+
+                        </td>
+
+
+                    </tr>
+
+
+                {% else %}
+
+
+                    <tr>
+
+
+                        <td colspan="5">
+
+                            No audit entries
+                            have been recorded yet.
+
+                        </td>
+
+
+                    </tr>
+
+
+                {% endfor %}
+
+
+            </tbody>
+
+
+        </table>
+
+
+    </div>
+
+
+</div>
+
+
+</body>
+
+</html>

@@ -1,11 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Dashboard</title>
+
     <style>
-        * { box-sizing: border-box; }
+
+        * {
+            box-sizing: border-box;
+        }
 
         body {
             font-family: Arial, Helvetica, sans-serif;
@@ -104,7 +112,8 @@
             margin-top: 15px;
         }
 
-        th, td {
+        th,
+        td {
             padding: 12px;
             border-bottom: 1px solid #ddd;
             text-align: left;
@@ -118,7 +127,8 @@
             font-weight: bold;
         }
 
-        .error, .flash-error {
+        .error,
+        .flash-error {
             background: #f8d7da;
             color: #842029;
             border: 1px solid #f5c2c7;
@@ -137,6 +147,7 @@
         }
 
         @media (max-width: 650px) {
+
             .navbar {
                 align-items: flex-start;
                 flex-direction: column;
@@ -153,137 +164,263 @@
             .panel {
                 overflow-x: auto;
             }
+
         }
+
     </style>
+
 </head>
 
 <body>
 
 <div class="navbar">
-    <h2>Employee and Attendance Management System</h2>
+
+    <h2>
+        Employee and Attendance Management System
+    </h2>
 
     <div class="user-info">
-        <strong>{{ username }}</strong><br>
+
+        <strong>
+            {{ username }}
+        </strong>
+
+        <br>
+
         {{ role }}
+
     </div>
+
 </div>
+
 
 <div class="container">
 
     {% with messages = get_flashed_messages(with_categories=true) %}
+
         {% for category, message in messages %}
-            <div class="flash-{{ category }}">{{ message }}</div>
+
+            <div class="flash-{{ category }}">
+                {{ message }}
+            </div>
+
         {% endfor %}
+
     {% endwith %}
 
+
     {% if error %}
-        <div class="error">{{ error }}</div>
+
+        <div class="error">
+            {{ error }}
+        </div>
+
     {% endif %}
 
+
     <div class="menu">
-        <a href="/employees-page">Employee Management</a>
 
-        <a href="/attendance-page">Attendance Management</a>
+        <a href="/employees-page">
+            Employee Management
+        </a>
 
-        <a href="/reports-page">Reports</a>
+        <a href="/attendance-page">
+            Attendance Management
+        </a>
+
+        <a href="/reports-page">
+            Reports
+        </a>
+
 
         {% if role == 'Administrator' %}
-            <a href="/users-page">User Management</a>
+
+            <a href="/users-page">
+                User Management
+            </a>
+
+            <a href="/audit-log">
+                Audit Log
+            </a>
+
         {% endif %}
 
-        <a class="logout" href="/logout">Logout</a>
+
+        <a
+            class="logout"
+            href="/logout">
+
+            Logout
+
+        </a>
+
     </div>
+
 
     <div class="cards">
 
+
         <div class="card">
-            <h3>Total Employees</h3>
+
+            <h3>
+                Total Employees
+            </h3>
+
             <div class="number">
+
                 {{ stats.total_employees }}
+
             </div>
+
         </div>
 
+
         <div class="card">
-            <h3>Employees Present Today</h3>
+
+            <h3>
+                Employees Present Today
+            </h3>
+
             <div class="number">
+
                 {{ stats.present_today }}
+
             </div>
+
         </div>
 
+
         <div class="card">
-            <h3>Employees Absent Today</h3>
+
+            <h3>
+                Employees Absent Today
+            </h3>
+
             <div class="number">
+
                 {{ stats.absent_today }}
+
             </div>
+
         </div>
 
+
         <div class="card">
-            <h3>Attendance Records This Week</h3>
+
+            <h3>
+                Attendance Records This Week
+            </h3>
+
             <div class="number">
+
                 {{ stats.weekly_attendance }}
+
             </div>
+
         </div>
+
 
     </div>
 
+
     <div class="panel">
 
-        <h2>Recent Attendance Activities</h2>
+        <h2>
+            Recent Attendance Activities
+        </h2>
+
 
         {% if recent_activities %}
+
 
             <table>
 
                 <tr>
-                    <th>Employee</th>
-                    <th>Date</th>
-                    <th>Check In</th>
-                    <th>Check Out</th>
-                    <th>Status</th>
+
+                    <th>
+                        Employee
+                    </th>
+
+                    <th>
+                        Date
+                    </th>
+
+                    <th>
+                        Check In
+                    </th>
+
+                    <th>
+                        Check Out
+                    </th>
+
+                    <th>
+                        Status
+                    </th>
+
                 </tr>
+
 
                 {% for record in recent_activities %}
 
-                <tr>
 
-                    <td>
-                        {{ record.first_name }}
-                        {{ record.last_name }}
-                    </td>
+                    <tr>
 
-                    <td>
-                        {{ record.date }}
-                    </td>
+                        <td>
 
-                    <td>
-                        {{ record.check_in_time or '-' }}
-                    </td>
+                            {{ record.first_name }}
+                            {{ record.last_name }}
 
-                    <td>
-                        {{ record.check_out_time or '-' }}
-                    </td>
+                        </td>
 
-                    <td class="status">
-                        {{ record.status }}
-                    </td>
+                        <td>
 
-                </tr>
+                            {{ record.date }}
+
+                        </td>
+
+                        <td>
+
+                            {{ record.check_in_time or '-' }}
+
+                        </td>
+
+                        <td>
+
+                            {{ record.check_out_time or '-' }}
+
+                        </td>
+
+                        <td class="status">
+
+                            {{ record.status }}
+
+                        </td>
+
+                    </tr>
+
 
                 {% endfor %}
 
+
             </table>
 
+
         {% else %}
+
 
             <p>
                 No attendance activity has been recorded yet.
             </p>
 
+
         {% endif %}
 
+
     </div>
+
 
 </div>
 
 </body>
+
 </html>
