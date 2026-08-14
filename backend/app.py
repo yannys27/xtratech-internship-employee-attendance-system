@@ -1,7 +1,9 @@
 import csv
 import io
 import re
-from datetime import datetime
+from datetime import date, datetime
+from pathlib import Path
+from uuid import uuid4
 from functools import wraps
 from urllib.parse import urlencode
 
@@ -14,11 +16,13 @@ from flask import (
     render_template,
     request,
     send_file,
+    send_from_directory,
     session,
     url_for,
 )
 from mysql.connector import Error, IntegrityError
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
 
 from config import Config
 from db import get_connection
@@ -29,6 +33,10 @@ Config.validate()
 app.config.from_object(Config)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024
+
+EMPLOYEE_UPLOAD_FOLDER = Path(app.root_path) / "uploads" / "employees"
+EMPLOYEE_UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
 
 
 # ---------------------------------------------------------
@@ -39,6 +47,12 @@ ADMIN_ROLE = "Administrator"
 HR_ROLE = "HR Officer"
 ALLOWED_ROLES = {ADMIN_ROLE, HR_ROLE}
 ALLOWED_STATUSES = {"Present", "Absent", "Late"}
+ALLOWED_GENDERS = {"Male", "Female", "Other", "Prefer not to say"}
+ALLOWED_EMPLOYMENT_STATUSES = {"Active", "Inactive"}
+ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
+ALLOWED_IMAGE_MIMETYPES = {"image/jpeg", "image/png", "image/webp"}
+MAX_EMPLOYEE_PHOTO_BYTES = 5 * 1024 * 1024
+EMPLOYEE_NUMBER_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{1,29}$")
 
 EMAIL_RE = re.compile(r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$")
 PHONE_RE = re.compile(r"^\+?[0-9 ()-]{7,20}$")
@@ -109,24 +123,59 @@ def validate_username_password_role(username, password, role):
 
 
 def validate_employee_input(data):
+    """Validate the complete Phase 7 employee profile."""
+    employee_number = str(data.get("employee_number", "")).strip()
+    national_id_passport = str(data.get("national_id_passport", "")).strip()
     first_name = str(data.get("first_name", "")).strip()
     last_name = str(data.get("last_name", "")).strip()
-    email = str(data.get("email", "")).strip()
+    date_of_birth = str(data.get("date_of_birth", "")).strip()
+    gender = str(data.get("gender", "")).strip()
+    residential_address = str(data.get("residential_address", "")).strip()
     phone = str(data.get("phone", "")).strip()
+    email = str(data.get("email", "")).strip()
+    job_position = str(data.get("job_position", "")).strip()
     department_id = data.get("department_id")
+    hire_date = str(data.get("hire_date", "")).strip()
+    employment_status = str(data.get("employment_status", "")).strip().title()
 
-    if not first_name:
-        return None, "First name is required."
-    if not last_name:
-        return None, "Last name is required."
+    required = {
+        "Employee number": employee_number,
+        "National ID / Passport number": national_id_passport,
+        "First name": first_name,
+        "Last name": last_name,
+        "Date of birth": date_of_birth,
+        "Gender": gender,
+        "Residential address": residential_address,
+        "Telephone number": phone,
+        "Email address": email,
+        "Job position": job_position,
+        "Hire date": hire_date,
+        "Employment status": employment_status,
+    }
+    for label, value in required.items():
+        if not value:
+            return None, f"{label} is required."
+
+    if not EMPLOYEE_NUMBER_RE.fullmatch(employee_number):
+        return None, "Employee number must contain 2 to 30 letters, numbers, dots, dashes, underscores or slashes."
+    if len(national_id_passport) > 50:
+        return None, "National ID / Passport number must not exceed 50 characters."
     if len(first_name) > 50 or len(last_name) > 50:
         return None, "First name and last name must not exceed 50 characters."
-    if not email:
-        return None, "Email address is required."
+    if not valid_date(date_of_birth):
+        return None, "Date of birth must be a valid date."
+    if datetime.strptime(date_of_birth, "%Y-%m-%d").date() >= date.today():
+        return None, "Date of birth must be in the past."
+    if gender not in ALLOWED_GENDERS:
+        return None, "Please select a valid gender."
+    if len(residential_address) < 5 or len(residential_address) > 255:
+        return None, "Residential address must contain between 5 and 255 characters."
+    if not valid_phone(phone):
+        return None, "Please enter a valid telephone number using 7 to 15 digits."
     if not valid_email(email):
         return None, "Please enter a valid email address, for example name@example.com."
-    if not valid_phone(phone):
-        return None, "Please enter a valid phone number using 7 to 15 digits."
+    if len(job_position) > 100:
+        return None, "Job position must not exceed 100 characters."
 
     try:
         department_id = int(department_id)
@@ -135,13 +184,93 @@ def validate_employee_input(data):
     except (TypeError, ValueError):
         return None, "A valid department is required."
 
+    if not valid_date(hire_date):
+        return None, "Hire date must be a valid date."
+    if employment_status not in ALLOWED_EMPLOYMENT_STATUSES:
+        return None, "Employment status must be Active or Inactive."
+
     return {
+        "employee_number": employee_number,
+        "national_id_passport": national_id_passport,
         "first_name": first_name,
         "last_name": last_name,
+        "date_of_birth": date_of_birth,
+        "gender": gender,
+        "residential_address": residential_address,
+        "phone": phone,
         "email": email,
-        "phone": phone or None,
+        "job_position": job_position,
         "department_id": department_id,
+        "hire_date": hire_date,
+        "employment_status": employment_status,
     }, None
+
+
+def validate_employee_photo(file_storage):
+    if not file_storage or not file_storage.filename:
+        return None
+
+    safe_name = secure_filename(file_storage.filename)
+    if "." not in safe_name:
+        return "Employee photograph must be a JPG, JPEG, PNG or WEBP image."
+
+    extension = safe_name.rsplit(".", 1)[1].lower()
+    if extension not in ALLOWED_IMAGE_EXTENSIONS:
+        return "Employee photograph must be a JPG, JPEG, PNG or WEBP image."
+    if file_storage.mimetype not in ALLOWED_IMAGE_MIMETYPES:
+        return "The uploaded file is not a supported image type."
+
+    position = file_storage.stream.tell()
+    file_storage.stream.seek(0, 2)
+    size = file_storage.stream.tell()
+    file_storage.stream.seek(position)
+    if size > MAX_EMPLOYEE_PHOTO_BYTES:
+        return "Employee photograph must not exceed 5 MB."
+    return None
+
+
+def save_employee_photo(file_storage):
+    if not file_storage or not file_storage.filename:
+        return None
+    extension = secure_filename(file_storage.filename).rsplit(".", 1)[1].lower()
+    filename = f"{uuid4().hex}.{extension}"
+    file_storage.save(EMPLOYEE_UPLOAD_FOLDER / filename)
+    return filename
+
+
+def remove_employee_photo(filename):
+    if not filename:
+        return
+    safe_name = Path(str(filename)).name
+    target = EMPLOYEE_UPLOAD_FOLDER / safe_name
+    try:
+        if target.is_file():
+            target.unlink()
+    except OSError:
+        pass
+
+
+def fetch_employee_by_id(employee_id):
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute(
+            """
+            SELECT employees.*, departments.department_name
+            FROM employees
+            LEFT JOIN departments ON employees.department_id = departments.department_id
+            WHERE employees.employee_id = %s
+            """,
+            (employee_id,),
+        )
+        return cursor.fetchone()
+    finally:
+        if cursor:
+            cursor.close()
+        if connection and connection.is_connected():
+            connection.close()
 
 
 def validate_attendance_input(data):
@@ -547,10 +676,14 @@ def employees_page():
             """
             SELECT
                 employees.employee_id,
+                employees.employee_number,
                 employees.first_name,
                 employees.last_name,
                 employees.email,
                 employees.phone,
+                employees.job_position,
+                employees.employment_status,
+                employees.photo_filename,
                 departments.department_name
             FROM employees
             LEFT JOIN departments ON employees.department_id = departments.department_id
@@ -558,25 +691,227 @@ def employees_page():
             """
         )
         employees = cursor.fetchall()
+        cursor.execute("SELECT department_id, department_name FROM departments ORDER BY department_name")
+        departments = cursor.fetchall()
         return render_template(
             "employees.html",
             employees=employees,
+            departments=departments,
             username=session.get("username"),
             role=session.get("role"),
+            genders=sorted(ALLOWED_GENDERS),
+            employment_statuses=["Active", "Inactive"],
         )
     except Error as error:
         return render_template(
             "employees.html",
             employees=[],
+            departments=[],
             error=f"Unable to load employees: {error}",
             username=session.get("username"),
             role=session.get("role"),
+            genders=sorted(ALLOWED_GENDERS),
+            employment_statuses=["Active", "Inactive"],
         ), 500
     finally:
         if cursor:
             cursor.close()
         if connection and connection.is_connected():
             connection.close()
+
+
+@app.route("/employee-photo/<path:filename>")
+@page_login_required
+def employee_photo(filename):
+    return send_from_directory(EMPLOYEE_UPLOAD_FOLDER, Path(filename).name)
+
+
+@app.route("/employees/create", methods=["POST"])
+@page_login_required
+def create_employee_page():
+    employee, validation_error = validate_employee_input(request.form)
+    if validation_error:
+        flash(validation_error, "error")
+        return redirect(url_for("employees_page"))
+
+    photo = request.files.get("photo")
+    if photo and photo.filename and session.get("role") != ADMIN_ROLE:
+        flash("Only Administrators can upload employee photographs.", "error")
+        return redirect(url_for("employees_page"))
+    photo_error = validate_employee_photo(photo)
+    if photo_error:
+        flash(photo_error, "error")
+        return redirect(url_for("employees_page"))
+
+    photo_filename = None
+    connection = None
+    cursor = None
+    try:
+        if photo and photo.filename:
+            photo_filename = save_employee_photo(photo)
+
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            INSERT INTO employees (
+                employee_number, national_id_passport, first_name, last_name,
+                date_of_birth, gender, residential_address, phone, email,
+                job_position, department_id, hire_date, employment_status, photo_filename
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                employee["employee_number"], employee["national_id_passport"],
+                employee["first_name"], employee["last_name"], employee["date_of_birth"],
+                employee["gender"], employee["residential_address"], employee["phone"],
+                employee["email"], employee["job_position"], employee["department_id"],
+                employee["hire_date"], employee["employment_status"], photo_filename,
+            ),
+        )
+        employee_id = cursor.lastrowid
+        connection.commit()
+        audit_log(
+            "Employee created",
+            f"Employee ID: {employee_id}; employee number: {employee['employee_number']}; name: {employee['first_name']} {employee['last_name']}",
+        )
+        flash("Employee profile created successfully.", "success")
+        return redirect(url_for("employee_profile_page", employee_id=employee_id))
+    except IntegrityError as error:
+        if photo_filename:
+            remove_employee_photo(photo_filename)
+        if getattr(error, "errno", None) == 1062:
+            flash("Employee number, National ID / Passport number or email is already in use.", "error")
+        else:
+            flash("The selected department does not exist.", "error")
+    except Error as error:
+        if photo_filename:
+            remove_employee_photo(photo_filename)
+        flash(f"Unable to create employee profile: {error}", "error")
+    finally:
+        if cursor:
+            cursor.close()
+        if connection and connection.is_connected():
+            connection.close()
+    return redirect(url_for("employees_page"))
+
+
+@app.route("/employees/<int:employee_id>/profile")
+@page_login_required
+def employee_profile_page(employee_id):
+    try:
+        employee = fetch_employee_by_id(employee_id)
+        if not employee:
+            flash("Employee not found.", "error")
+            return redirect(url_for("employees_page"))
+        departments = fetch_departments()
+        return render_template(
+            "employee_profile.html",
+            employee=employee,
+            departments=departments,
+            username=session.get("username"),
+            role=session.get("role"),
+            genders=sorted(ALLOWED_GENDERS),
+            employment_statuses=["Active", "Inactive"],
+        )
+    except Error as error:
+        flash(f"Unable to load employee profile: {error}", "error")
+        return redirect(url_for("employees_page"))
+
+
+@app.route("/employees/<int:employee_id>/edit-profile", methods=["POST"])
+@page_login_required
+def edit_employee_profile(employee_id):
+    employee, validation_error = validate_employee_input(request.form)
+    if validation_error:
+        flash(validation_error, "error")
+        return redirect(url_for("employee_profile_page", employee_id=employee_id))
+
+    photo = request.files.get("photo")
+    remove_photo = request.form.get("remove_photo") == "1"
+    if (photo and photo.filename or remove_photo) and session.get("role") != ADMIN_ROLE:
+        flash("Only Administrators can change employee photographs.", "error")
+        return redirect(url_for("employee_profile_page", employee_id=employee_id))
+    photo_error = validate_employee_photo(photo)
+    if photo_error:
+        flash(photo_error, "error")
+        return redirect(url_for("employee_profile_page", employee_id=employee_id))
+
+    connection = None
+    cursor = None
+    new_photo_filename = None
+    old_photo_filename = None
+    try:
+        connection = get_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT photo_filename FROM employees WHERE employee_id = %s", (employee_id,))
+        existing = cursor.fetchone()
+        if not existing:
+            flash("Employee not found.", "error")
+            return redirect(url_for("employees_page"))
+
+        old_photo_filename = existing.get("photo_filename")
+        final_photo_filename = old_photo_filename
+        if photo and photo.filename:
+            new_photo_filename = save_employee_photo(photo)
+            final_photo_filename = new_photo_filename
+        elif remove_photo:
+            final_photo_filename = None
+
+        cursor.execute(
+            """
+            UPDATE employees SET
+                employee_number = %s,
+                national_id_passport = %s,
+                first_name = %s,
+                last_name = %s,
+                date_of_birth = %s,
+                gender = %s,
+                residential_address = %s,
+                phone = %s,
+                email = %s,
+                job_position = %s,
+                department_id = %s,
+                hire_date = %s,
+                employment_status = %s,
+                photo_filename = %s
+            WHERE employee_id = %s
+            """,
+            (
+                employee["employee_number"], employee["national_id_passport"],
+                employee["first_name"], employee["last_name"], employee["date_of_birth"],
+                employee["gender"], employee["residential_address"], employee["phone"],
+                employee["email"], employee["job_position"], employee["department_id"],
+                employee["hire_date"], employee["employment_status"], final_photo_filename,
+                employee_id,
+            ),
+        )
+        connection.commit()
+
+        if old_photo_filename and old_photo_filename != final_photo_filename:
+            remove_employee_photo(old_photo_filename)
+
+        audit_log(
+            "Employee updated",
+            f"Employee ID: {employee_id}; employee number: {employee['employee_number']}; name: {employee['first_name']} {employee['last_name']}; status: {employee['employment_status']}",
+        )
+        flash("Employee profile updated successfully.", "success")
+    except IntegrityError as error:
+        if new_photo_filename:
+            remove_employee_photo(new_photo_filename)
+        if getattr(error, "errno", None) == 1062:
+            flash("Employee number, National ID / Passport number or email is already in use.", "error")
+        else:
+            flash("The selected department does not exist.", "error")
+    except Error as error:
+        if new_photo_filename:
+            remove_employee_photo(new_photo_filename)
+        flash(f"Unable to update employee profile: {error}", "error")
+    finally:
+        if cursor:
+            cursor.close()
+        if connection and connection.is_connected():
+            connection.close()
+    return redirect(url_for("employee_profile_page", employee_id=employee_id))
 
 
 @app.route("/attendance-page")
@@ -1215,7 +1550,7 @@ def logout():
 
 
 # ---------------------------------------------------------
-# EMPLOYEE CRUD API - TASK 6 VALIDATION + TASK 7 AUDIT
+# EMPLOYEE CRUD API - PHASE 7 WEEK 1 PROFILE ENHANCEMENT
 # ---------------------------------------------------------
 
 @app.route("/employees", methods=["GET"])
@@ -1230,12 +1565,21 @@ def get_employees():
             """
             SELECT
                 employees.employee_id,
+                employees.employee_number,
+                employees.national_id_passport,
                 employees.first_name,
                 employees.last_name,
+                employees.date_of_birth,
+                employees.gender,
+                employees.residential_address,
                 employees.email,
                 employees.phone,
+                employees.job_position,
                 employees.department_id,
-                departments.department_name
+                departments.department_name,
+                employees.hire_date,
+                employees.employment_status,
+                employees.photo_filename
             FROM employees
             LEFT JOIN departments ON employees.department_id = departments.department_id
             ORDER BY employees.employee_id ASC
@@ -1269,24 +1613,30 @@ def add_employee():
         cursor = connection.cursor()
         cursor.execute(
             """
-            INSERT INTO employees (first_name, last_name, email, phone, department_id)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO employees (
+                employee_number, national_id_passport, first_name, last_name,
+                date_of_birth, gender, residential_address, phone, email,
+                job_position, department_id, hire_date, employment_status
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
-                employee["first_name"], employee["last_name"], employee["email"],
-                employee["phone"], employee["department_id"],
+                employee["employee_number"], employee["national_id_passport"],
+                employee["first_name"], employee["last_name"], employee["date_of_birth"],
+                employee["gender"], employee["residential_address"], employee["phone"],
+                employee["email"], employee["job_position"], employee["department_id"],
+                employee["hire_date"], employee["employment_status"],
             ),
         )
         employee_id = cursor.lastrowid
         connection.commit()
         audit_log(
             "Employee created",
-            f"Employee ID: {employee_id}; name: {employee['first_name']} {employee['last_name']}; email: {employee['email']}",
+            f"Employee ID: {employee_id}; employee number: {employee['employee_number']}; name: {employee['first_name']} {employee['last_name']}",
         )
         return jsonify({"message": "Employee added successfully", "employee_id": employee_id}), 201
     except IntegrityError as error:
         if getattr(error, "errno", None) == 1062:
-            return jsonify({"error": "An employee with this email already exists."}), 409
+            return jsonify({"error": "Employee number, National ID / Passport number or email is already in use."}), 409
         return jsonify({"error": "The selected department does not exist."}), 400
     except Error:
         return jsonify({"error": "Unable to add employee"}), 500
@@ -1313,31 +1663,37 @@ def update_employee(employee_id):
     try:
         connection = get_connection()
         cursor = connection.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM employees WHERE employee_id = %s", (employee_id,))
-        old_employee = cursor.fetchone()
-        if not old_employee:
+        cursor.execute("SELECT employee_id FROM employees WHERE employee_id = %s", (employee_id,))
+        if not cursor.fetchone():
             return jsonify({"error": "Employee not found"}), 404
 
         cursor.execute(
             """
-            UPDATE employees
-            SET first_name = %s, last_name = %s, email = %s, phone = %s, department_id = %s
+            UPDATE employees SET
+                employee_number = %s, national_id_passport = %s,
+                first_name = %s, last_name = %s, date_of_birth = %s,
+                gender = %s, residential_address = %s, phone = %s,
+                email = %s, job_position = %s, department_id = %s,
+                hire_date = %s, employment_status = %s
             WHERE employee_id = %s
             """,
             (
-                employee["first_name"], employee["last_name"], employee["email"],
-                employee["phone"], employee["department_id"], employee_id,
+                employee["employee_number"], employee["national_id_passport"],
+                employee["first_name"], employee["last_name"], employee["date_of_birth"],
+                employee["gender"], employee["residential_address"], employee["phone"],
+                employee["email"], employee["job_position"], employee["department_id"],
+                employee["hire_date"], employee["employment_status"], employee_id,
             ),
         )
         connection.commit()
         audit_log(
             "Employee updated",
-            f"Employee ID: {employee_id}; name: {employee['first_name']} {employee['last_name']}; email: {employee['email']}",
+            f"Employee ID: {employee_id}; employee number: {employee['employee_number']}; name: {employee['first_name']} {employee['last_name']}",
         )
         return jsonify({"message": "Employee updated successfully"})
     except IntegrityError as error:
         if getattr(error, "errno", None) == 1062:
-            return jsonify({"error": "Another employee already uses this email."}), 409
+            return jsonify({"error": "Employee number, National ID / Passport number or email is already in use."}), 409
         return jsonify({"error": "The selected department does not exist."}), 400
     except Error:
         return jsonify({"error": "Unable to update employee"}), 500
@@ -1353,19 +1709,26 @@ def update_employee(employee_id):
 def delete_employee(employee_id):
     connection = None
     cursor = None
+    photo_filename = None
     try:
         connection = get_connection()
         cursor = connection.cursor(dictionary=True)
-        cursor.execute("SELECT first_name, last_name, email FROM employees WHERE employee_id = %s", (employee_id,))
+        cursor.execute(
+            "SELECT first_name, last_name, email, employee_number, photo_filename FROM employees WHERE employee_id = %s",
+            (employee_id,),
+        )
         employee = cursor.fetchone()
         if not employee:
             return jsonify({"error": "Employee not found"}), 404
+        photo_filename = employee.get("photo_filename")
 
         cursor.execute("DELETE FROM employees WHERE employee_id = %s", (employee_id,))
         connection.commit()
+        if photo_filename:
+            remove_employee_photo(photo_filename)
         audit_log(
             "Employee deleted",
-            f"Employee ID: {employee_id}; name: {employee['first_name']} {employee['last_name']}; email: {employee['email']}",
+            f"Employee ID: {employee_id}; employee number: {employee.get('employee_number')}; name: {employee['first_name']} {employee['last_name']}; email: {employee['email']}",
         )
         return jsonify({"message": "Employee deleted successfully"})
     except IntegrityError:
@@ -1622,20 +1985,28 @@ def search_employees():
             """
             SELECT
                 employees.employee_id,
+                employees.employee_number,
+                employees.national_id_passport,
                 employees.first_name,
                 employees.last_name,
                 employees.email,
                 employees.phone,
-                departments.department_name
+                employees.job_position,
+                employees.employment_status,
+                departments.department_name,
+                employees.photo_filename
             FROM employees
             LEFT JOIN departments ON employees.department_id = departments.department_id
-            WHERE employees.first_name LIKE %s
+            WHERE employees.employee_number LIKE %s
+               OR employees.national_id_passport LIKE %s
+               OR employees.first_name LIKE %s
                OR employees.last_name LIKE %s
                OR employees.email LIKE %s
+               OR employees.job_position LIKE %s
                OR departments.department_name LIKE %s
             ORDER BY employees.employee_id ASC
             """,
-            (search_value, search_value, search_value, search_value),
+            (search_value, search_value, search_value, search_value, search_value, search_value, search_value),
         )
         return jsonify(cursor.fetchall())
     except Error:

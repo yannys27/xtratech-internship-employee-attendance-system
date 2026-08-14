@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Employee Profile</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f4f6f9;
+            margin: 0;
+            color: #222;
+        }
+
+        .navbar {
+            background: #007BFF;
+            color: white;
+            padding: 18px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar h2 {
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1250px;
+            margin: auto;
+            padding: 30px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 10px 15px;
+            border: 0;
+            border-radius: 6px;
+            color: white;
+            background: #007BFF;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .button.green {
+            background: #198754;
+        }
+
+        .panel {
+            background: white;
+            padding: 24px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,.08);
+            margin-top: 22px;
+        }
+
+        .profile-head {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .photo {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #e8edf2;
+        }
+
+        .placeholder {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: #dfe6ee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 38px;
+            font-weight: bold;
+            color: #5b6570;
+        }
+
+        .profile-head h1 {
+            margin: 0 0 8px;
+        }
+
+        .muted {
+            color: #666;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 14px;
+            color: white;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .active {
+            background: #198754;
+        }
+
+        .inactive {
+            background: #6c757d;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(220px, 1fr));
+            gap: 15px;
+        }
+
+        .full {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cfd4da;
+            border-radius: 5px;
+            font: inherit;
+        }
+
+        textarea {
+            min-height: 90px;
+            resize: vertical;
+        }
+
+        .flash-success {
+            background: #d1e7dd;
+            color: #0f5132;
+            border: 1px solid #badbcc;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 18px;
+        }
+
+        .flash-error,
+        .error {
+            background: #f8d7da;
+            color: #842029;
+            border: 1px solid #f5c2c7;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 18px;
+        }
+
+        .hint {
+            color: #666;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+
+        .remove-photo {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .remove-photo input {
+            width: auto;
+        }
+
+        @media (max-width: 900px) {
+
+            .form-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+        }
+
+        @media (max-width: 620px) {
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-head {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .container {
+                padding: 18px;
+            }
+
+            .navbar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="navbar">
+
+    <h2>
+        Employee Profile
+    </h2>
+
+    <div>
+        <strong>{{ username }}</strong> — {{ role }}
+    </div>
+
+</div>
+
+
+<div class="container">
+
+    <a
+        class="button"
+        href="/employees-page">
+
+        Back to Employee List
+
+    </a>
+
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+
+        {% for category, message in messages %}
+
+            <div class="flash-{{ category }}">
+                {{ message }}
+            </div>
+
+        {% endfor %}
+
+    {% endwith %}
+
+
+    <div class="panel">
+
+        <div class="profile-head">
+
+            {% if employee.photo_filename %}
+
+                <img
+                    class="photo"
+                    src="{{ url_for('employee_photo', filename=employee.photo_filename) }}"
+                    alt="Employee photo">
+
+            {% else %}
+
+                <div class="placeholder">
+                    {{ employee.first_name[:1] }}{{ employee.last_name[:1] }}
+                </div>
+
+            {% endif %}
+
+
+            <div>
+
+                <h1>
+                    {{ employee.first_name }} {{ employee.last_name }}
+                </h1>
+
+                <div class="muted">
+
+                    {{ employee.employee_number or 'Employee number incomplete' }}
+
+                    •
+
+                    {{ employee.job_position or 'Job position incomplete' }}
+
+                </div>
+
+                <div
+                    class="muted"
+                    style="margin-top:5px;">
+
+                    {{ employee.department_name or 'Department not assigned' }}
+
+                </div>
+
+
+                <div style="margin-top:10px;">
+
+                    {% if employee.employment_status == 'Inactive' %}
+
+                        <span class="badge inactive">
+                            Inactive
+                        </span>
+
+                    {% else %}
+
+                        <span class="badge active">
+                            Active
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <h2>
+            Edit Employee Information
+        </h2>
+
+
+        <p class="muted">
+
+            Legacy employee records may have blank Phase 7 fields.
+
+            Complete every required field before saving.
+
+        </p>
+
+
+        <form
+            action="{{ url_for('edit_employee_profile', employee_id=employee.employee_id) }}"
+            method="POST"
+            enctype="multipart/form-data">
+
+
+            <div class="form-grid">
+
+
+                <div>
+
+                    <label>
+                        Employee Number *
+                    </label>
+
+                    <input
+                        type="text"
+                        name="employee_number"
+                        maxlength="30"
+                        value="{{ employee.employee_number or '' }}"
+                        required>
+
+                </div>
+
+
+                <div>
+
+                    <label>
+                        National ID / Passport Number *
+                    </label>
+
+                    <input
+                        type="text"
+                        name="national_id_passport"
+                        maxlength="50"
+                        value="{{ employee.national_id_passport or '' }}"
+                        required>
+
+                </div>
+
+
+                <div>
+
+                    <label>
+                        Employment Status *
+                    </label>
+
+                    <select
+                        name="employment_status"
+                        required>
+
+
+                        {% for status in employment_statuses %}
+
+                            <option
+                                value="{{ status }}"
+
+                                {% if
+                                    (employee.employment_status or 'Active')
+                                    == status
+                                %}
+
+                                    selected
+
+                                {% endif %}>
+
+
+                                {{ status }}
+
+
+                            </option>
+
+                        {% endfor %}
+
+
+                    </select>
+
+                </div>
+
+
+                <div>
+
+                    <label>
+                        First Name *
+                    </label>
+
+                    <input
+                        type="text"
+                        name="first_name"
+                        maxlength="50"
+                        value="{{ employee.first_name }}"
+                        required>
+
+                </div>
+
+
+                <div>
+
+                    <label>
+                        Last Name *
+                    </label>
+
+                    <input
+                        type="text"
+                        name="last_name"
+                        maxlength="50"
+                        value="{{ employee.last_name }}"
+                        required>
+
+                </div>
+
+
+                <div>
+
+                    <label>
+                        Date of Birth *
+                    </label>
+
+                    <input
+                        type="date"
+                        name="date_of_birth"
+                        value="{{ employee.date_of_birth or '' }}"
+                        required>
+
+                </div>
+
+
+                <div>
+
+                    <label>
+                        Gender *
+                    </label>
+
+                    <select
+                        name="gender"
+                        required>
+
+
+                        <option value="">
+                            Select gender
+                        </option>
+
+
+                        {% for gender in genders %}
+
+                            <option
+                                value="{{ gender }}"
+
+                                {% if employee.gender == gender %}
+                                    selected
+                                {% endif %}>
+
+
+                                {{ gender }}
+
+
+                            </option>
+
+                        {% endfor %}
+
+
+                    </select>
+
+                </div>
+
+
+                <div>
+
+                    <label>
+                        Telephone Number *
+                    </label>
+
+                    <input
+                        type="tel"
+                        name="phone"
+                        maxlength="30"
+                        value="{{ employee.phone or '' }}"
+                        required>
+
+                </div>
+
+
+                <div>
+
+                    <label>
+                        Email Address *
+                    </label>
+
+                    <input
+                        type="email"
+                        name="email"
+                        maxlength="100"
+                        value="{{ employee.email or '' }}"
+                        required>
+
+                </div>
+
+
+                <div>
+
+                    <label>
+                        Job Position *
+                    </label>
+
+                    <input
+                        type="text"
+                        name="job_position"
+                        maxlength="100"
+                        value="{{ employee.job_position or '' }}"
+                        required>
+
+                </div>
+
+
+                <div>
+
+                    <label>
+                        Department *
+                    </label>
+
+                    <select
+                        name="department_id"
+                        required>
+
+
+                        <option value="">
+                            Select department
+                        </option>
+
+
+                        {% for department in departments %}
+
+                            <option
+                                value="{{ department.department_id }}"
+
+                                {% if
+                                    employee.department_id
+                                    ==
+                                    department.department_id
+                                %}
+
+                                    selected
+
+                                {% endif %}>
+
+
+                                {{ department.department_name }}
+
+
+                            </option>
+
+                        {% endfor %}
+
+
+                    </select>
+
+                </div>
+
+
+                <div>
+
+                    <label>
+                        Hire Date *
+                    </label>
+
+                    <input
+                        type="date"
+                        name="hire_date"
+                        value="{{ employee.hire_date or '' }}"
+                        required>
+
+                </div>
+
+
+                <div class="full">
+
+                    <label>
+                        Residential Address *
+                    </label>
+
+                    <textarea
+                        name="residential_address"
+                        maxlength="255"
+                        required>{{ employee.residential_address or '' }}</textarea>
+
+                </div>
+
+
+                {% if role == 'Administrator' %}
+
+                <div class="full">
+
+                    <label>
+                        Employee Photograph
+                    </label>
+
+                    <input
+                        type="file"
+                        name="photo"
+                        accept="image/jpeg,image/png,image/webp">
+
+
+                    <div class="hint">
+
+                        Upload a new JPG, PNG or WEBP image to replace the current photograph.
+
+                        Maximum 5 MB.
+
+                    </div>
+
+
+                    {% if employee.photo_filename %}
+
+                    <label class="remove-photo">
+
+                        <input
+                            type="checkbox"
+                            name="remove_photo"
+                            value="1">
+
+                        Remove current photograph
+
+                    </label>
+
+                    {% endif %}
+
+                </div>
+
+                {% endif %}
+
+
+            </div>
+
+
+            <div style="margin-top:18px;">
+
+                <button
+                    class="button green"
+                    type="submit">
+
+                    Save Employee Profile
+
+                </button>
+
+            </div>
+
+
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

@@ -1,155 +1,575 @@
 <!DOCTYPE html>
-
-<html>
-
+<html lang="en">
 <head>
-
-    <title>Employees</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Management</title>
 
     <style>
+        * {
+            box-sizing: border-box;
+        }
 
         body {
-            font-family: Arial;
-            background: #f4f4f4;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f4f6f9;
             margin: 0;
+            color: #222;
         }
 
         .navbar {
             background: #007BFF;
             color: white;
-            padding: 15px;
+            padding: 18px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar h2 {
+            margin: 0;
         }
 
         .container {
+            max-width: 1450px;
+            margin: auto;
             padding: 30px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 10px 15px;
+            border: 0;
+            border-radius: 6px;
+            color: white;
+            background: #007BFF;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .button.green {
+            background: #198754;
+        }
+
+        .button:hover {
+            opacity: .92;
+        }
+
+        .panel {
+            background: white;
+            padding: 22px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,.08);
+            margin-top: 22px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(220px, 1fr));
+            gap: 15px;
+        }
+
+        .full {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cfd4da;
+            border-radius: 5px;
+            font: inherit;
+        }
+
+        textarea {
+            min-height: 85px;
+            resize: vertical;
+        }
+
+        .hint {
+            color: #666;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+
+        .flash-success {
+            background: #d1e7dd;
+            color: #0f5132;
+            border: 1px solid #badbcc;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 18px;
+        }
+
+        .flash-error,
+        .error {
+            background: #f8d7da;
+            color: #842029;
+            border: 1px solid #f5c2c7;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 18px;
         }
 
         table {
             width: 100%;
-            background: white;
             border-collapse: collapse;
+            margin-top: 15px;
         }
 
         th,
         td {
             padding: 12px;
-            border: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
             text-align: left;
+            vertical-align: middle;
         }
 
         th {
-            background: #007BFF;
-            color: white;
+            background: #eef2f6;
         }
 
-        a {
+        .photo {
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #e3e7eb;
+        }
+
+        .placeholder {
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            background: #dfe6ee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #5b6570;
+        }
+
+        .badge {
             display: inline-block;
-            margin-bottom: 20px;
-            padding: 10px 15px;
-            background: #007BFF;
+            padding: 5px 9px;
+            border-radius: 14px;
             color: white;
-            text-decoration: none;
-            border-radius: 5px;
+            font-size: 13px;
+            font-weight: bold;
         }
 
+        .active {
+            background: #198754;
+        }
+
+        .inactive {
+            background: #6c757d;
+        }
+
+        .muted {
+            color: #666;
+        }
+
+        @media (max-width: 950px) {
+            .form-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .panel {
+                overflow-x: auto;
+            }
+        }
+
+        @media (max-width: 620px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 18px;
+            }
+
+            .navbar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+        }
     </style>
-
 </head>
-
 
 <body>
 
-
 <div class="navbar">
-
-    <h2>
-        Employee Management
-    </h2>
-
+    <h2>Employee Management</h2>
+    <div>
+        <strong>{{ username }}</strong> — {{ role }}
+    </div>
 </div>
-
 
 <div class="container">
 
-
-    <a href="/">
+    <a class="button" href="/dashboard">
         Back to Dashboard
     </a>
 
-
-    <table>
-
-
-        <tr>
-
-            <th>
-                ID
-            </th>
-
-            <th>
-                First Name
-            </th>
-
-            <th>
-                Last Name
-            </th>
-
-            <th>
-                Email
-            </th>
-
-            <th>
-                Phone
-            </th>
-
-            <th>
-                Department
-            </th>
-
-        </tr>
-
-
-        {% for employee in employees %}
-
-
-        <tr>
-
-            <td>
-                {{ employee.employee_id }}
-            </td>
-
-            <td>
-                {{ employee.first_name }}
-            </td>
-
-            <td>
-                {{ employee.last_name }}
-            </td>
-
-            <td>
-                {{ employee.email }}
-            </td>
-
-            <td>
-                {{ employee.phone }}
-            </td>
-
-            <td>
-                {{ employee.department_name }}
-            </td>
-
-        </tr>
-
-
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="flash-{{ category }}">
+                {{ message }}
+            </div>
         {% endfor %}
+    {% endwith %}
+
+    {% if error %}
+        <div class="error">
+            {{ error }}
+        </div>
+    {% endif %}
+
+    <div class="panel">
+
+        <h2>Create Employee Profile</h2>
+
+        <p class="muted">
+            All fields marked as required must be completed before the employee can be saved.
+        </p>
+
+        <form
+            action="/employees/create"
+            method="POST"
+            enctype="multipart/form-data">
+
+            <div class="form-grid">
+
+                <div>
+                    <label>Employee Number *</label>
+
+                    <input
+                        type="text"
+                        name="employee_number"
+                        maxlength="30"
+                        placeholder="EMP00006"
+                        required>
+                </div>
+
+                <div>
+                    <label>National ID / Passport Number *</label>
+
+                    <input
+                        type="text"
+                        name="national_id_passport"
+                        maxlength="50"
+                        required>
+                </div>
+
+                <div>
+                    <label>Employment Status *</label>
+
+                    <select
+                        name="employment_status"
+                        required>
+
+                        {% for status in employment_statuses %}
+                            <option value="{{ status }}">
+                                {{ status }}
+                            </option>
+                        {% endfor %}
+
+                    </select>
+                </div>
+
+                <div>
+                    <label>First Name *</label>
+
+                    <input
+                        type="text"
+                        name="first_name"
+                        maxlength="50"
+                        required>
+                </div>
+
+                <div>
+                    <label>Last Name *</label>
+
+                    <input
+                        type="text"
+                        name="last_name"
+                        maxlength="50"
+                        required>
+                </div>
+
+                <div>
+                    <label>Date of Birth *</label>
+
+                    <input
+                        type="date"
+                        name="date_of_birth"
+                        required>
+                </div>
+
+                <div>
+                    <label>Gender *</label>
+
+                    <select
+                        name="gender"
+                        required>
+
+                        <option value="">
+                            Select gender
+                        </option>
+
+                        {% for gender in genders %}
+                            <option value="{{ gender }}">
+                                {{ gender }}
+                            </option>
+                        {% endfor %}
+
+                    </select>
+                </div>
+
+                <div>
+                    <label>Telephone Number *</label>
+
+                    <input
+                        type="tel"
+                        name="phone"
+                        maxlength="30"
+                        placeholder="+351 912 345 678"
+                        required>
+                </div>
+
+                <div>
+                    <label>Email Address *</label>
+
+                    <input
+                        type="email"
+                        name="email"
+                        maxlength="100"
+                        required>
+                </div>
+
+                <div>
+                    <label>Job Position *</label>
+
+                    <input
+                        type="text"
+                        name="job_position"
+                        maxlength="100"
+                        required>
+                </div>
+
+                <div>
+                    <label>Department *</label>
+
+                    <select
+                        name="department_id"
+                        required>
+
+                        <option value="">
+                            Select department
+                        </option>
+
+                        {% for department in departments %}
+                            <option value="{{ department.department_id }}">
+                                {{ department.department_name }}
+                            </option>
+                        {% endfor %}
+
+                    </select>
+                </div>
+
+                <div>
+                    <label>Hire Date *</label>
+
+                    <input
+                        type="date"
+                        name="hire_date"
+                        required>
+                </div>
+
+                <div class="full">
+
+                    <label>Residential Address *</label>
+
+                    <textarea
+                        name="residential_address"
+                        maxlength="255"
+                        required></textarea>
+
+                </div>
+
+                {% if role == 'Administrator' %}
+
+                <div class="full">
+
+                    <label>Employee Photograph</label>
+
+                    <input
+                        type="file"
+                        name="photo"
+                        accept="image/jpeg,image/png,image/webp">
+
+                    <div class="hint">
+                        Administrator only. JPG, PNG or WEBP, maximum 5 MB.
+                    </div>
+
+                </div>
+
+                {% endif %}
+
+            </div>
+
+            <div style="margin-top:18px;">
+
+                <button
+                    class="button green"
+                    type="submit">
+
+                    Create Employee
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
 
 
-    </table>
+    <div class="panel">
 
+        <h2>Employee List</h2>
+
+        <table>
+
+            <thead>
+
+                <tr>
+                    <th>Photo</th>
+                    <th>Employee No.</th>
+                    <th>Name</th>
+                    <th>Job Position</th>
+                    <th>Department</th>
+                    <th>Contact</th>
+                    <th>Status</th>
+                    <th>Profile</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for employee in employees %}
+
+                <tr>
+
+                    <td>
+
+                        {% if employee.photo_filename %}
+
+                            <img
+                                class="photo"
+                                src="{{ url_for('employee_photo', filename=employee.photo_filename) }}"
+                                alt="Employee photo">
+
+                        {% else %}
+
+                            <div class="placeholder">
+                                {{ employee.first_name[:1] }}{{ employee.last_name[:1] }}
+                            </div>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+                        {{ employee.employee_number or ('EMP' ~ '%05d'|format(employee.employee_id)) }}
+                    </td>
+
+                    <td>
+                        <strong>
+                            {{ employee.first_name }} {{ employee.last_name }}
+                        </strong>
+                    </td>
+
+                    <td>
+                        {{ employee.job_position or 'Not completed' }}
+                    </td>
+
+                    <td>
+                        {{ employee.department_name or '-' }}
+                    </td>
+
+                    <td>
+
+                        {{ employee.email }}
+
+                        <br>
+
+                        <span class="muted">
+                            {{ employee.phone or '-' }}
+                        </span>
+
+                    </td>
+
+                    <td>
+
+                        {% if employee.employment_status == 'Inactive' %}
+
+                            <span class="badge inactive">
+                                Inactive
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge active">
+                                Active
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        <a
+                            class="button"
+                            href="{{ url_for('employee_profile_page', employee_id=employee.employee_id) }}">
+
+                            View Profile
+
+                        </a>
+
+                    </td>
+
+                </tr>
+
+                {% else %}
+
+                <tr>
+                    <td colspan="8">
+                        No employees found.
+                    </td>
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
 
 </div>
 
-
 </body>
-
 </html>
