@@ -1,170 +1,623 @@
 <!DOCTYPE html>
-
-<html>
-
+<html lang="en">
 <head>
-
-    <title>Attendance</title>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Management</title>
 
     <style>
+        * { box-sizing: border-box; }
 
         body {
-            font-family: Arial;
-            background: #f4f4f4;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f4f6f9;
             margin: 0;
+            color: #222;
         }
 
         .navbar {
             background: #007BFF;
             color: white;
-            padding: 15px;
+            padding: 18px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
+        .navbar h2 { margin: 0; }
+
         .container {
+            max-width: 1500px;
+            margin: auto;
             padding: 30px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 10px 15px;
+            border: 0;
+            border-radius: 6px;
+            color: white;
+            background: #007BFF;
+            text-decoration: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .button:hover { opacity: .92; }
+        .green { background: #198754; }
+        .orange { background: #fd7e14; }
+        .red { background: #dc3545; }
+        .gray { background: #6c757d; }
+
+        .panel {
+            background: white;
+            padding: 22px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,.08);
+            margin-top: 22px;
+        }
+
+        .schedule {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .schedule-box {
+            background: #eef5ff;
+            border: 1px solid #cfe2ff;
+            border-radius: 8px;
+            padding: 12px 16px;
+            min-width: 180px;
+        }
+
+        .schedule-box strong {
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .quick-grid,
+        .record-grid {
+            display: grid;
+            gap: 14px;
+            align-items: end;
+        }
+
+        .quick-grid {
+            grid-template-columns: 2fr auto auto;
+        }
+
+        .record-grid {
+            grid-template-columns: 2fr 1fr 1fr 1fr auto;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cfd4da;
+            border-radius: 5px;
+            background: white;
+            font: inherit;
+        }
+
+        .note {
+            color: #666;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+
+        .flash-success {
+            background: #d1e7dd;
+            color: #0f5132;
+            border: 1px solid #badbcc;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 18px;
+        }
+
+        .flash-error,
+        .error {
+            background: #f8d7da;
+            color: #842029;
+            border: 1px solid #f5c2c7;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 18px;
         }
 
         table {
             width: 100%;
-            background: white;
             border-collapse: collapse;
+            margin-top: 15px;
+            min-width: 1200px;
         }
 
         th,
         td {
-            border: 1px solid #ddd;
-            padding: 12px;
+            padding: 11px;
+            border-bottom: 1px solid #ddd;
             text-align: left;
+            vertical-align: middle;
         }
 
-        th {
-            background: #007BFF;
-            color: white;
-        }
+        th { background: #eef2f6; }
 
-        a {
+        .badge {
             display: inline-block;
-            margin-bottom: 20px;
-            padding: 10px 15px;
-            background: #007BFF;
+            padding: 5px 9px;
+            border-radius: 14px;
             color: white;
-            text-decoration: none;
-            border-radius: 5px;
+            font-size: 13px;
+            font-weight: bold;
         }
 
+        .present { background: #198754; }
+        .late { background: #fd7e14; }
+        .absent { background: #dc3545; }
+        .weekend { background: #6f42c1; }
+
+        .metric-good { color: #198754; font-weight: bold; }
+        .metric-warning { color: #dc3545; font-weight: bold; }
+        .muted { color: #666; }
+
+        .inline-form { display: inline; }
+
+        @media (max-width: 1000px) {
+            .quick-grid,
+            .record-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .panel { overflow-x: auto; }
+        }
+
+        @media (max-width: 650px) {
+            .quick-grid,
+            .record-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .container { padding: 18px; }
+
+            .navbar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+        }
     </style>
-
 </head>
-
 
 <body>
 
-
 <div class="navbar">
-
-    <h2>
-        Attendance Management
-    </h2>
-
+    <h2>Attendance Management</h2>
+    <div><strong>{{ username }}</strong> — {{ role }}</div>
 </div>
-
 
 <div class="container">
 
+    <a class="button" href="/dashboard">Back to Dashboard</a>
 
-    <a href="/">
-        Back to Dashboard
-    </a>
-
-
-    <table>
-
-
-        <tr>
-
-            <th>
-                ID
-            </th>
-
-            <th>
-                Employee
-            </th>
-
-            <th>
-                Date
-            </th>
-
-            <th>
-                Check In
-            </th>
-
-            <th>
-                Check Out
-            </th>
-
-            <th>
-                Status
-            </th>
-
-        </tr>
-
-
-        {% for record in attendance %}
-
-
-        <tr>
-
-
-            <td>
-                {{ record.attendance_id }}
-            </td>
-
-
-            <td>
-
-                {{ record.first_name }}
-                {{ record.last_name }}
-
-            </td>
-
-
-            <td>
-                {{ record.date }}
-            </td>
-
-
-            <td>
-
-                {{ record.check_in_time or '-' }}
-
-            </td>
-
-
-            <td>
-
-                {{ record.check_out_time or '-' }}
-
-            </td>
-
-
-            <td>
-                {{ record.status }}
-            </td>
-
-
-        </tr>
-
-
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="flash-{{ category }}">{{ message }}</div>
         {% endfor %}
+    {% endwith %}
 
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% endif %}
 
-    </table>
+    <div class="panel">
+        <h2>Automatic Attendance Rules</h2>
 
+        <p>
+            The system now calculates attendance status, working hours,
+            late arrival, early departure and weekend attendance automatically.
+        </p>
+
+        <div class="schedule">
+
+            <div class="schedule-box">
+                <strong>Scheduled Start</strong>
+                {{ scheduled_start }}
+            </div>
+
+            <div class="schedule-box">
+                <strong>Scheduled End</strong>
+                {{ scheduled_end }}
+            </div>
+
+            <div class="schedule-box">
+                <strong>Status Rule</strong>
+                After {{ scheduled_start }} = Late
+            </div>
+
+        </div>
+    </div>
+
+    <div class="panel">
+
+        <h2>Quick Check-In / Check-Out</h2>
+
+        <p class="muted">
+            These buttons use the current server date and time automatically.
+        </p>
+
+        <form class="quick-grid" method="POST">
+
+            <div>
+
+                <label>Employee</label>
+
+                <select name="employee_id" required>
+
+                    <option value="">
+                        Select employee
+                    </option>
+
+                    {% for employee in employees %}
+
+                        <option value="{{ employee.employee_id }}">
+
+                            {{ employee.employee_number }}
+                            —
+                            {{ employee.first_name }}
+                            {{ employee.last_name }}
+
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+            <button
+                class="button green"
+                type="submit"
+                formaction="/attendance-page/check-in">
+
+                Check In Now
+
+            </button>
+
+            <button
+                class="button orange"
+                type="submit"
+                formaction="/attendance-page/check-out">
+
+                Check Out Now
+
+            </button>
+
+        </form>
+
+    </div>
+
+    <div class="panel">
+
+        <h2>
+            Add Historical / Manual-Time Attendance Record
+        </h2>
+
+        <p class="muted">
+            You enter only the employee, date and times.
+            Do not select a status — the system calculates it automatically.
+        </p>
+
+        <form
+            action="/attendance-page/create"
+            method="POST"
+            class="record-grid">
+
+            <div>
+
+                <label>
+                    Employee *
+                </label>
+
+                <select
+                    name="employee_id"
+                    required>
+
+                    <option value="">
+                        Select employee
+                    </option>
+
+                    {% for employee in employees %}
+
+                        <option value="{{ employee.employee_id }}">
+
+                            {{ employee.employee_number }}
+                            —
+                            {{ employee.first_name }}
+                            {{ employee.last_name }}
+
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+            <div>
+
+                <label>
+                    Date *
+                </label>
+
+                <input
+                    type="date"
+                    name="date"
+                    value="{{ today }}"
+                    required>
+
+            </div>
+
+            <div>
+
+                <label>
+                    Check-In
+                </label>
+
+                <input
+                    type="time"
+                    name="check_in_time">
+
+            </div>
+
+            <div>
+
+                <label>
+                    Check-Out
+                </label>
+
+                <input
+                    type="time"
+                    name="check_out_time">
+
+            </div>
+
+            <button
+                class="button green"
+                type="submit">
+
+                Save & Calculate
+
+            </button>
+
+        </form>
+
+    </div>
+
+    <div class="panel">
+
+        <h2>
+            Attendance Records
+        </h2>
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>ID</th>
+
+                    <th>Employee</th>
+
+                    <th>Date</th>
+
+                    <th>Check In</th>
+
+                    <th>Check Out</th>
+
+                    <th>Total Hours</th>
+
+                    <th>Late Arrival</th>
+
+                    <th>Early Departure</th>
+
+                    <th>Status</th>
+
+                    <th>Weekend</th>
+
+                    <th>Action</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for record in attendance %}
+
+                <tr>
+
+                    <td>
+                        {{ record.attendance_id }}
+                    </td>
+
+                    <td>
+
+                        {{ record.first_name }}
+                        {{ record.last_name }}
+
+                    </td>
+
+                    <td>
+                        {{ record.date }}
+                    </td>
+
+                    <td>
+                        {{ record.check_in_time or '-' }}
+                    </td>
+
+                    <td>
+                        {{ record.check_out_time or '-' }}
+                    </td>
+
+                    <td>
+
+                        {% if record.total_working_hours is not none %}
+
+                            <span class="metric-good">
+
+                                {{ record.total_working_hours }} h
+
+                            </span>
+
+                        {% else %}
+
+                            <span class="muted">
+                                -
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        {% if
+                            record.late_arrival_minutes
+                            and
+                            record.late_arrival_minutes > 0
+                        %}
+
+                            <span class="metric-warning">
+
+                                {{ record.late_arrival_minutes }} min
+
+                            </span>
+
+                        {% else %}
+
+                            <span class="metric-good">
+                                0 min
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        {% if
+                            record.early_departure_minutes
+                            and
+                            record.early_departure_minutes > 0
+                        %}
+
+                            <span class="metric-warning">
+
+                                {{ record.early_departure_minutes }} min
+
+                            </span>
+
+                        {% else %}
+
+                            <span class="metric-good">
+                                0 min
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        {% if record.status == 'Late' %}
+
+                            <span class="badge late">
+                                Late
+                            </span>
+
+                        {% elif record.status == 'Absent' %}
+
+                            <span class="badge absent">
+                                Absent
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge present">
+                                Present
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        {% if record.weekend_attendance %}
+
+                            <span class="badge weekend">
+                                Yes
+                            </span>
+
+                        {% else %}
+
+                            No
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        <form
+                            class="inline-form"
+                            action="/attendance-page/{{ record.attendance_id }}/delete"
+                            method="POST"
+                            onsubmit="return confirm('Delete this attendance record?');">
+
+                            <button
+                                class="button red"
+                                type="submit">
+
+                                Delete
+
+                            </button>
+
+                        </form>
+
+                    </td>
+
+                </tr>
+
+                {% else %}
+
+                <tr>
+
+                    <td colspan="11">
+                        No attendance records found.
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
 
 </div>
 
-
 </body>
-
 </html>

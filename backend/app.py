@@ -1,7 +1,7 @@
 import csv
 import io
 import re
-from datetime import date, datetime
+from datetime import date, datetime, time
 from pathlib import Path
 from uuid import uuid4
 from functools import wraps
@@ -52,6 +52,11 @@ ALLOWED_EMPLOYMENT_STATUSES = {"Active", "Inactive"}
 ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
 ALLOWED_IMAGE_MIMETYPES = {"image/jpeg", "image/png", "image/webp"}
 MAX_EMPLOYEE_PHOTO_BYTES = 5 * 1024 * 1024
+
+# Phase 7 - Week 2 standard working schedule
+SCHEDULED_START_TIME = time(8, 0)
+SCHEDULED_END_TIME = time(17, 0)
+
 EMPLOYEE_NUMBER_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{1,29}$")
 
 EMAIL_RE = re.compile(r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$")
@@ -273,12 +278,62 @@ def fetch_employee_by_id(employee_id):
             connection.close()
 
 
+def minutes_between(start_time, end_time):
+    start_minutes = start_time.hour * 60 + start_time.minute
+    end_minutes = end_time.hour * 60 + end_time.minute
+    return end_minutes - start_minutes
+
+
+def calculate_attendance_values(attendance_date, check_in, check_out):
+    """Calculate Phase 7 Week 2 attendance values automatically."""
+    record_date = datetime.strptime(attendance_date, "%Y-%m-%d").date()
+    weekend_attendance = record_date.weekday() >= 5
+
+    if check_out and not check_in:
+        raise ValueError("A check-out time cannot be recorded without a check-in time.")
+    if check_in and check_out and check_out < check_in:
+        raise ValueError("Check-out time cannot be earlier than check-in time.")
+
+    if not check_in:
+        return {
+            "status": "Absent",
+            "total_working_hours": None,
+            "late_arrival_minutes": 0,
+            "early_departure_minutes": 0,
+            "weekend_attendance": weekend_attendance,
+        }
+
+    late_arrival_minutes = 0
+    early_departure_minutes = 0
+
+    # Weekend attendance is tracked separately; weekend employees are not marked late/early.
+    if not weekend_attendance:
+        late_arrival_minutes = max(0, minutes_between(SCHEDULED_START_TIME, check_in))
+        if check_out:
+            early_departure_minutes = max(0, minutes_between(check_out, SCHEDULED_END_TIME))
+
+    total_working_hours = None
+    if check_out:
+        worked_minutes = minutes_between(check_in, check_out)
+        total_working_hours = round(worked_minutes / 60, 2)
+
+    status = "Late" if late_arrival_minutes > 0 else "Present"
+
+    return {
+        "status": status,
+        "total_working_hours": total_working_hours,
+        "late_arrival_minutes": late_arrival_minutes,
+        "early_departure_minutes": early_departure_minutes,
+        "weekend_attendance": weekend_attendance,
+    }
+
+
 def validate_attendance_input(data):
+    """Validate raw attendance input and calculate status/hours automatically."""
     employee_id = data.get("employee_id")
     attendance_date = str(data.get("date", "")).strip()
     check_in_raw = data.get("check_in_time")
     check_out_raw = data.get("check_out_time")
-    status = str(data.get("status", "")).strip().title()
 
     try:
         employee_id = int(employee_id)
@@ -291,8 +346,6 @@ def validate_attendance_input(data):
         return None, "Attendance date is required."
     if not valid_date(attendance_date):
         return None, "Attendance date must use YYYY-MM-DD format."
-    if status not in ALLOWED_STATUSES:
-        return None, "Status must be Present, Absent or Late."
 
     check_in = parse_time(check_in_raw)
     check_out = parse_time(check_out_raw)
@@ -301,15 +354,20 @@ def validate_attendance_input(data):
         return None, "Check-in time must use HH:MM format."
     if check_out is False:
         return None, "Check-out time must use HH:MM format."
-    if check_in and check_out and check_out < check_in:
-        return None, "Check-out time cannot be earlier than check-in time."
+
+    try:
+        calculated = calculate_attendance_values(attendance_date, check_in, check_out)
+    except ValueError as error:
+        return None, str(error)
 
     return {
         "employee_id": employee_id,
         "date": attendance_date,
-        "check_in_time": str(check_in_raw).strip() if check_in_raw not in (None, "") else None,
-        "check_out_time": str(check_out_raw).strip() if check_out_raw not in (None, "") else None,
-        "status": status,
+        "check_in_time": check_in.strftime("%H:%M:%S") if check_in else None,
+        "check_out_time": check_out.strftime("%H:%M:%S") if check_out else None,
+        "scheduled_start_time": SCHEDULED_START_TIME.strftime("%H:%M:%S"),
+        "scheduled_end_time": SCHEDULED_END_TIME.strftime("%H:%M:%S"),
+        **calculated,
     }, None
 
 
@@ -506,6 +564,12 @@ def fetch_attendance_report(filters):
                 attendance.date,
                 attendance.check_in_time,
                 attendance.check_out_time,
+                attendance.scheduled_start_time,
+                attendance.scheduled_end_time,
+                attendance.total_working_hours,
+                attendance.late_arrival_minutes,
+                attendance.early_departure_minutes,
+                attendance.weekend_attendance,
                 attendance.status
             FROM attendance
             JOIN employees
@@ -613,7 +677,7 @@ def dashboard():
         stats["total_employees"] = cursor.fetchone()["total"]
 
         cursor.execute(
-            "SELECT COUNT(DISTINCT employee_id) AS total FROM attendance WHERE date = CURDATE() AND status = 'Present'"
+            "SELECT COUNT(DISTINCT employee_id) AS total FROM attendance WHERE date = CURDATE() AND status IN ('Present', 'Late')"
         )
         stats["present_today"] = cursor.fetchone()["total"]
 
@@ -636,6 +700,12 @@ def dashboard():
                 attendance.date,
                 attendance.check_in_time,
                 attendance.check_out_time,
+                attendance.scheduled_start_time,
+                attendance.scheduled_end_time,
+                attendance.total_working_hours,
+                attendance.late_arrival_minutes,
+                attendance.early_departure_minutes,
+                attendance.weekend_attendance,
                 attendance.status
             FROM attendance
             JOIN employees ON attendance.employee_id = employees.employee_id
@@ -926,11 +996,18 @@ def attendance_page():
             """
             SELECT
                 attendance.attendance_id,
+                attendance.employee_id,
                 employees.first_name,
                 employees.last_name,
                 attendance.date,
                 attendance.check_in_time,
                 attendance.check_out_time,
+                attendance.scheduled_start_time,
+                attendance.scheduled_end_time,
+                attendance.total_working_hours,
+                attendance.late_arrival_minutes,
+                attendance.early_departure_minutes,
+                attendance.weekend_attendance,
                 attendance.status
             FROM attendance
             JOIN employees ON attendance.employee_id = employees.employee_id
@@ -938,25 +1015,270 @@ def attendance_page():
             """
         )
         attendance_records = cursor.fetchall()
+
+        cursor.execute(
+            """
+            SELECT employee_id, employee_number, first_name, last_name
+            FROM employees
+            WHERE employment_status = 'Active'
+            ORDER BY first_name, last_name
+            """
+        )
+        employees = cursor.fetchall()
+
         return render_template(
             "attendance.html",
             attendance=attendance_records,
+            employees=employees,
             username=session.get("username"),
             role=session.get("role"),
+            today=date.today().isoformat(),
+            scheduled_start=SCHEDULED_START_TIME.strftime("%H:%M"),
+            scheduled_end=SCHEDULED_END_TIME.strftime("%H:%M"),
         )
     except Error as error:
         return render_template(
             "attendance.html",
             attendance=[],
+            employees=[],
             error=f"Unable to load attendance records: {error}",
             username=session.get("username"),
             role=session.get("role"),
+            today=date.today().isoformat(),
+            scheduled_start=SCHEDULED_START_TIME.strftime("%H:%M"),
+            scheduled_end=SCHEDULED_END_TIME.strftime("%H:%M"),
         ), 500
     finally:
         if cursor:
             cursor.close()
         if connection and connection.is_connected():
             connection.close()
+
+
+@app.route("/attendance-page/create", methods=["POST"])
+@page_login_required
+def create_attendance_page():
+    attendance, validation_error = validate_attendance_input(request.form)
+    if validation_error:
+        flash(validation_error, "error")
+        return redirect(url_for("attendance_page"))
+
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        cursor = connection.cursor()
+        cursor.execute(
+            """
+            INSERT INTO attendance (
+                employee_id, date, check_in_time, check_out_time, status,
+                scheduled_start_time, scheduled_end_time, total_working_hours,
+                late_arrival_minutes, early_departure_minutes, weekend_attendance
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                attendance["employee_id"], attendance["date"],
+                attendance["check_in_time"], attendance["check_out_time"],
+                attendance["status"], attendance["scheduled_start_time"],
+                attendance["scheduled_end_time"], attendance["total_working_hours"],
+                attendance["late_arrival_minutes"], attendance["early_departure_minutes"],
+                attendance["weekend_attendance"],
+            ),
+        )
+        attendance_id = cursor.lastrowid
+        connection.commit()
+        audit_log(
+            "Attendance record created",
+            f"Attendance ID: {attendance_id}; employee ID: {attendance['employee_id']}; "
+            f"date: {attendance['date']}; status: {attendance['status']}; "
+            f"hours: {attendance['total_working_hours']}",
+        )
+        flash("Attendance saved and calculated automatically.", "success")
+    except IntegrityError:
+        flash("The selected employee does not exist.", "error")
+    except Error as error:
+        flash(f"Unable to save attendance record: {error}", "error")
+    finally:
+        if cursor:
+            cursor.close()
+        if connection and connection.is_connected():
+            connection.close()
+    return redirect(url_for("attendance_page"))
+
+
+@app.route("/attendance-page/check-in", methods=["POST"])
+@page_login_required
+def attendance_check_in_now():
+    employee_id = request.form.get("employee_id")
+    now = datetime.now()
+    payload = {
+        "employee_id": employee_id,
+        "date": now.date().isoformat(),
+        "check_in_time": now.strftime("%H:%M:%S"),
+        "check_out_time": None,
+    }
+    attendance, validation_error = validate_attendance_input(payload)
+    if validation_error:
+        flash(validation_error, "error")
+        return redirect(url_for("attendance_page"))
+
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute(
+            "SELECT attendance_id, check_in_time, check_out_time FROM attendance WHERE employee_id = %s AND date = %s ORDER BY attendance_id DESC LIMIT 1",
+            (attendance["employee_id"], attendance["date"]),
+        )
+        existing = cursor.fetchone()
+        if existing and existing["check_in_time"]:
+            flash("This employee is already checked in today.", "error")
+            return redirect(url_for("attendance_page"))
+
+        if existing:
+            cursor.execute(
+                """
+                UPDATE attendance
+                SET check_in_time=%s, status=%s, scheduled_start_time=%s, scheduled_end_time=%s,
+                    total_working_hours=%s, late_arrival_minutes=%s, early_departure_minutes=%s, weekend_attendance=%s
+                WHERE attendance_id=%s
+                """,
+                (
+                    attendance["check_in_time"], attendance["status"], attendance["scheduled_start_time"],
+                    attendance["scheduled_end_time"], attendance["total_working_hours"],
+                    attendance["late_arrival_minutes"], attendance["early_departure_minutes"],
+                    attendance["weekend_attendance"], existing["attendance_id"],
+                ),
+            )
+            attendance_id = existing["attendance_id"]
+        else:
+            cursor.execute(
+                """
+                INSERT INTO attendance (
+                    employee_id, date, check_in_time, check_out_time, status,
+                    scheduled_start_time, scheduled_end_time, total_working_hours,
+                    late_arrival_minutes, early_departure_minutes, weekend_attendance
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                """,
+                (
+                    attendance["employee_id"], attendance["date"], attendance["check_in_time"],
+                    attendance["check_out_time"], attendance["status"], attendance["scheduled_start_time"],
+                    attendance["scheduled_end_time"], attendance["total_working_hours"],
+                    attendance["late_arrival_minutes"], attendance["early_departure_minutes"],
+                    attendance["weekend_attendance"],
+                ),
+            )
+            attendance_id = cursor.lastrowid
+        connection.commit()
+        audit_log("Employee checked in", f"Attendance ID: {attendance_id}; employee ID: {attendance['employee_id']}; time: {attendance['check_in_time']}; status: {attendance['status']}")
+        flash(f"Check-in recorded at {now.strftime('%H:%M:%S')}. Status: {attendance['status']}.", "success")
+    except Error as error:
+        flash(f"Unable to record check-in: {error}", "error")
+    finally:
+        if cursor:
+            cursor.close()
+        if connection and connection.is_connected():
+            connection.close()
+    return redirect(url_for("attendance_page"))
+
+
+@app.route("/attendance-page/check-out", methods=["POST"])
+@page_login_required
+def attendance_check_out_now():
+    employee_id = request.form.get("employee_id")
+    now = datetime.now()
+    connection = None
+    cursor = None
+    try:
+        employee_id = int(employee_id)
+        connection = get_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute(
+            """
+            SELECT * FROM attendance
+            WHERE employee_id = %s AND date = %s
+            ORDER BY attendance_id DESC LIMIT 1
+            """,
+            (employee_id, now.date().isoformat()),
+        )
+        existing = cursor.fetchone()
+        if not existing or not existing.get("check_in_time"):
+            flash("This employee must check in before checking out.", "error")
+            return redirect(url_for("attendance_page"))
+        if existing.get("check_out_time"):
+            flash("This employee is already checked out today.", "error")
+            return redirect(url_for("attendance_page"))
+
+        payload = {
+            "employee_id": employee_id,
+            "date": now.date().isoformat(),
+            "check_in_time": str(existing["check_in_time"]),
+            "check_out_time": now.strftime("%H:%M:%S"),
+        }
+        attendance, validation_error = validate_attendance_input(payload)
+        if validation_error:
+            flash(validation_error, "error")
+            return redirect(url_for("attendance_page"))
+
+        cursor.execute(
+            """
+            UPDATE attendance
+            SET check_out_time=%s, status=%s, scheduled_start_time=%s, scheduled_end_time=%s,
+                total_working_hours=%s, late_arrival_minutes=%s, early_departure_minutes=%s, weekend_attendance=%s
+            WHERE attendance_id=%s
+            """,
+            (
+                attendance["check_out_time"], attendance["status"], attendance["scheduled_start_time"],
+                attendance["scheduled_end_time"], attendance["total_working_hours"],
+                attendance["late_arrival_minutes"], attendance["early_departure_minutes"],
+                attendance["weekend_attendance"], existing["attendance_id"],
+            ),
+        )
+        connection.commit()
+        audit_log(
+            "Employee checked out",
+            f"Attendance ID: {existing['attendance_id']}; employee ID: {employee_id}; time: {attendance['check_out_time']}; "
+            f"hours: {attendance['total_working_hours']}; early departure: {attendance['early_departure_minutes']} min",
+        )
+        flash(f"Check-out recorded at {now.strftime('%H:%M:%S')}. Total working hours: {attendance['total_working_hours']}.", "success")
+    except (TypeError, ValueError):
+        flash("Please select a valid employee.", "error")
+    except Error as error:
+        flash(f"Unable to record check-out: {error}", "error")
+    finally:
+        if cursor:
+            cursor.close()
+        if connection and connection.is_connected():
+            connection.close()
+    return redirect(url_for("attendance_page"))
+
+
+@app.route("/attendance-page/<int:attendance_id>/delete", methods=["POST"])
+@page_login_required
+def delete_attendance_page(attendance_id):
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM attendance WHERE attendance_id = %s", (attendance_id,))
+        attendance = cursor.fetchone()
+        if not attendance:
+            flash("Attendance record not found.", "error")
+            return redirect(url_for("attendance_page"))
+        cursor.execute("DELETE FROM attendance WHERE attendance_id = %s", (attendance_id,))
+        connection.commit()
+        audit_log("Attendance record deleted", f"Attendance ID: {attendance_id}; employee ID: {attendance['employee_id']}; date: {attendance['date']}")
+        flash("Attendance record deleted successfully.", "success")
+    except Error as error:
+        flash(f"Unable to delete attendance record: {error}", "error")
+    finally:
+        if cursor:
+            cursor.close()
+        if connection and connection.is_connected():
+            connection.close()
+    return redirect(url_for("attendance_page"))
 
 
 # ---------------------------------------------------------
@@ -1764,6 +2086,12 @@ def get_attendance():
                 attendance.date,
                 attendance.check_in_time,
                 attendance.check_out_time,
+                attendance.scheduled_start_time,
+                attendance.scheduled_end_time,
+                attendance.total_working_hours,
+                attendance.late_arrival_minutes,
+                attendance.early_departure_minutes,
+                attendance.weekend_attendance,
                 attendance.status
             FROM attendance
             JOIN employees ON attendance.employee_id = employees.employee_id
@@ -1798,12 +2126,18 @@ def add_attendance():
         cursor = connection.cursor()
         cursor.execute(
             """
-            INSERT INTO attendance (employee_id, date, check_in_time, check_out_time, status)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO attendance (
+                employee_id, date, check_in_time, check_out_time, status,
+                scheduled_start_time, scheduled_end_time, total_working_hours,
+                late_arrival_minutes, early_departure_minutes, weekend_attendance
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 attendance["employee_id"], attendance["date"], attendance["check_in_time"],
                 attendance["check_out_time"], attendance["status"],
+                attendance["scheduled_start_time"], attendance["scheduled_end_time"],
+                attendance["total_working_hours"], attendance["late_arrival_minutes"],
+                attendance["early_departure_minutes"], attendance["weekend_attendance"],
             ),
         )
         attendance_id = cursor.lastrowid
@@ -1848,12 +2182,17 @@ def update_attendance(attendance_id):
         cursor.execute(
             """
             UPDATE attendance
-            SET employee_id = %s, date = %s, check_in_time = %s, check_out_time = %s, status = %s
+            SET employee_id = %s, date = %s, check_in_time = %s, check_out_time = %s, status = %s,
+                scheduled_start_time = %s, scheduled_end_time = %s, total_working_hours = %s,
+                late_arrival_minutes = %s, early_departure_minutes = %s, weekend_attendance = %s
             WHERE attendance_id = %s
             """,
             (
                 attendance["employee_id"], attendance["date"], attendance["check_in_time"],
-                attendance["check_out_time"], attendance["status"], attendance_id,
+                attendance["check_out_time"], attendance["status"],
+                attendance["scheduled_start_time"], attendance["scheduled_end_time"],
+                attendance["total_working_hours"], attendance["late_arrival_minutes"],
+                attendance["early_departure_minutes"], attendance["weekend_attendance"], attendance_id,
             ),
         )
         connection.commit()
