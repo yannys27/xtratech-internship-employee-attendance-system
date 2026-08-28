@@ -54,8 +54,15 @@ ALLOWED_IMAGE_MIMETYPES = {"image/jpeg", "image/png", "image/webp"}
 MAX_EMPLOYEE_PHOTO_BYTES = 5 * 1024 * 1024
 
 # Phase 7 - Week 2 standard working schedule
-SCHEDULED_START_TIME = time(8, 0)
-SCHEDULED_END_TIME = time(17, 0)
+SCHEDULED_START_TIME = datetime.strptime(
+    app.config["ATTENDANCE_START_TIME"],
+    "%H:%M"
+).time()
+
+SCHEDULED_END_TIME = datetime.strptime(
+    app.config["ATTENDANCE_END_TIME"],
+    "%H:%M"
+).time()
 
 EMPLOYEE_NUMBER_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{1,29}$")
 
