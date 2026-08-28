@@ -1,4 +1,4 @@
-USE employee_attendance_system;
+
 
 -- Phase 7 - Week 2: Attendance Enhancement
 -- Run this script ONCE on the existing database.

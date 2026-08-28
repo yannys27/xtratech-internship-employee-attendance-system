@@ -1,4 +1,4 @@
-USE employee_attendance_system;
+
 
 ALTER TABLE employees
     ADD COLUMN employee_number VARCHAR(30) NULL AFTER employee_id,
