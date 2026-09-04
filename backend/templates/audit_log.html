@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 
 <head>
@@ -14,13 +13,11 @@
         Audit Log
     </title>
 
-
     <style>
 
         * {
             box-sizing: border-box;
         }
-
 
         body {
 
@@ -36,7 +33,6 @@
             color: #222;
 
         }
-
 
         .navbar {
 
@@ -54,24 +50,19 @@
 
         }
 
-
         .navbar h2 {
-
             margin: 0;
-
         }
-
 
         .container {
 
-            max-width: 1450px;
+            max-width: 1550px;
 
             margin: auto;
 
             padding: 30px;
 
         }
-
 
         .button {
 
@@ -85,17 +76,27 @@
 
             text-decoration: none;
 
+            border: 0;
+
             border-radius: 6px;
 
-        }
+            cursor: pointer;
 
+            font: inherit;
+
+        }
 
         .button:hover {
-
-            background: #0056b3;
-
+            opacity: .92;
         }
 
+        .green {
+            background: #198754;
+        }
+
+        .gray {
+            background: #6c757d;
+        }
 
         .panel {
 
@@ -111,44 +112,85 @@
                 0 2px 10px
                 rgba(0,0,0,.08);
 
-            overflow-x: auto;
+        }
+
+        .filters {
+
+            display: grid;
+
+            grid-template-columns:
+                1.5fr
+                1fr
+                1fr
+                1.2fr
+                1.4fr
+                1fr
+                1fr;
+
+            gap: 12px;
+
+            align-items: end;
 
         }
 
+        label {
 
-        table {
+            display: block;
+
+            font-weight: bold;
+
+            margin-bottom: 6px;
+
+        }
+
+        input,
+        select {
 
             width: 100%;
 
-            border-collapse: collapse;
+            padding: 10px;
 
-            margin-top: 15px;
+            border:
+                1px solid #cfd4da;
+
+            border-radius: 5px;
+
+            background: white;
+
+            font: inherit;
 
         }
 
+        .filter-actions {
 
-        th,
-        td {
+            display: flex;
+
+            gap: 10px;
+
+            flex-wrap: wrap;
+
+            margin-top: 16px;
+
+        }
+
+        .flash-success {
+
+            background: #d1e7dd;
+
+            color: #0f5132;
+
+            border:
+                1px solid #badbcc;
 
             padding: 12px;
 
-            border-bottom:
-                1px solid #ddd;
+            border-radius: 6px;
 
-            text-align: left;
-
-            vertical-align: top;
+            margin-top: 18px;
 
         }
 
-
-        th {
-
-            background: #eef2f6;
-
-        }
-
-
+        .flash-error,
         .error {
 
             background: #f8d7da;
@@ -166,10 +208,54 @@
 
         }
 
+        .summary {
+
+            color: #666;
+
+            margin:
+                8px 0 0;
+
+        }
+
+        .table-wrap {
+
+            overflow-x: auto;
+
+        }
+
+        table {
+
+            width: 100%;
+
+            border-collapse: collapse;
+
+            margin-top: 15px;
+
+            min-width: 1450px;
+
+        }
+
+        th,
+        td {
+
+            padding: 11px;
+
+            border-bottom:
+                1px solid #ddd;
+
+            text-align: left;
+
+            vertical-align: top;
+
+        }
+
+        th {
+            background: #eef2f6;
+        }
 
         .details {
 
-            max-width: 600px;
+            max-width: 360px;
 
             white-space: normal;
 
@@ -177,13 +263,71 @@
 
         }
 
+        .badge {
 
-        .muted {
+            display: inline-block;
 
-            color: #666;
+            padding: 5px 9px;
+
+            border-radius: 14px;
+
+            background: #007BFF;
+
+            color: white;
+
+            font-size: 12px;
+
+            font-weight: bold;
 
         }
 
+        .muted {
+            color: #666;
+        }
+
+
+        @media
+        (max-width: 1100px) {
+
+            .filters {
+
+                grid-template-columns:
+                    1fr
+                    1fr
+                    1fr;
+
+            }
+
+        }
+
+
+        @media
+        (max-width: 700px) {
+
+            .filters {
+
+                grid-template-columns:
+                    1fr;
+
+            }
+
+            .container {
+
+                padding: 18px;
+
+            }
+
+            .navbar {
+
+                flex-direction: column;
+
+                align-items: flex-start;
+
+                gap: 8px;
+
+            }
+
+        }
 
     </style>
 
@@ -195,11 +339,9 @@
 
 <div class="navbar">
 
-
     <h2>
         Audit Log
     </h2>
-
 
     <div>
 
@@ -212,7 +354,6 @@
         {{ role }}
 
     </div>
-
 
 </div>
 
@@ -227,6 +368,29 @@
         Back to Dashboard
 
     </a>
+
+
+    {% with messages =
+        get_flashed_messages(
+        with_categories=true) %}
+
+
+        {% for category, message
+            in messages %}
+
+
+            <div
+                class="flash-{{ category }}">
+
+                {{ message }}
+
+            </div>
+
+
+        {% endfor %}
+
+
+    {% endwith %}
 
 
     {% if error %}
@@ -246,136 +410,552 @@
 
 
         <h2>
-            Recent System Activities
+            Search and Filter Audit Records
         </h2>
 
 
         <p class="muted">
 
-            The latest 200 audit entries
-            are shown.
+            Only Administrators can access this page.
 
-            Only Administrators can access
-            this page.
+            Search by user, role, action,
+            IP address, affected record,
+            module or date.
 
         </p>
 
 
-        <table>
+        <form
+            method="GET"
+            action="/audit-log">
 
 
-            <thead>
+            <div class="filters">
 
 
-                <tr>
+                <div>
+
+                    <label>
+                        Search
+                    </label>
+
+                    <input
+
+                        type="text"
+
+                        name="q"
+
+                        maxlength="150"
+
+                        value="{{ filters.q or '' }}"
+
+                        placeholder="Search audit records">
+
+                </div>
 
 
-                    <th>
-                        ID
-                    </th>
+                <div>
+
+                    <label>
+                        User
+                    </label>
 
 
-                    <th>
-                        Username
-                    </th>
+                    <select
+                        name="username">
 
 
-                    <th>
+                        <option value="">
+                            All users
+                        </option>
+
+
+                        {% for item in usernames %}
+
+
+                            <option
+                                value="{{ item }}"
+
+                                {% if
+                                    filters.username
+                                    ==
+                                    item
+                                %}
+
+                                    selected
+
+                                {% endif %}>
+
+
+                                {{ item }}
+
+
+                            </option>
+
+
+                        {% endfor %}
+
+
+                    </select>
+
+                </div>
+
+
+                <div>
+
+                    <label>
+                        Role
+                    </label>
+
+
+                    <select
+                        name="role">
+
+
+                        <option value="">
+                            All roles
+                        </option>
+
+
+                        {% for item in roles %}
+
+
+                            <option
+                                value="{{ item }}"
+
+                                {% if
+                                    filters.role
+                                    ==
+                                    item
+                                %}
+
+                                    selected
+
+                                {% endif %}>
+
+
+                                {{ item }}
+
+
+                            </option>
+
+
+                        {% endfor %}
+
+
+                    </select>
+
+                </div>
+
+
+                <div>
+
+                    <label>
+                        Module
+                    </label>
+
+
+                    <select
+                        name="module">
+
+
+                        <option value="">
+                            All modules
+                        </option>
+
+
+                        {% for item in modules %}
+
+
+                            <option
+                                value="{{ item }}"
+
+                                {% if
+                                    filters.module
+                                    ==
+                                    item
+                                %}
+
+                                    selected
+
+                                {% endif %}>
+
+
+                                {{ item }}
+
+
+                            </option>
+
+
+                        {% endfor %}
+
+
+                    </select>
+
+                </div>
+
+
+                <div>
+
+                    <label>
                         Action
-                    </th>
+                    </label>
 
 
-                    <th>
-                        Date and Time
-                    </th>
+                    <select
+                        name="action">
 
 
-                    <th>
-                        Additional Information
-                    </th>
+                        <option value="">
+                            All actions
+                        </option>
 
 
-                </tr>
+                        {% for item in actions %}
 
 
-            </thead>
+                            <option
+                                value="{{ item }}"
+
+                                {% if
+                                    filters.action
+                                    ==
+                                    item
+                                %}
+
+                                    selected
+
+                                {% endif %}>
 
 
-            <tbody>
+                                {{ item }}
 
 
-                {% for log in logs %}
+                            </option>
+
+
+                        {% endfor %}
+
+
+                    </select>
+
+                </div>
+
+
+                <div>
+
+                    <label>
+                        From Date
+                    </label>
+
+                    <input
+                        type="date"
+                        name="date_from"
+                        value="{{ filters.date_from or '' }}">
+
+                </div>
+
+
+                <div>
+
+                    <label>
+                        To Date
+                    </label>
+
+                    <input
+                        type="date"
+                        name="date_to"
+                        value="{{ filters.date_to or '' }}">
+
+                </div>
+
+
+            </div>
+
+
+            <div class="filter-actions">
+
+
+                <button
+                    class="button green"
+                    type="submit">
+
+                    Apply Filters
+
+                </button>
+
+
+                <a
+                    class="button gray"
+                    href="/audit-log">
+
+                    Clear Filters
+
+                </a>
+
+
+            </div>
+
+
+        </form>
+
+
+    </div>
+
+
+    <div class="panel">
+
+
+        <h2>
+            Audit Records
+        </h2>
+
+
+        <p class="summary">
+
+            {{ logs|length }}
+            record(s) displayed.
+
+            Maximum 500 results.
+
+        </p>
+
+
+        <div class="table-wrap">
+
+
+            <table>
+
+
+                <thead>
 
 
                     <tr>
 
 
-                        <td>
-
-                            {{ log.audit_id }}
-
-                        </td>
+                        <th>
+                            ID
+                        </th>
 
 
-                        <td>
-
-                            {{ log.username }}
-
-                        </td>
+                        <th>
+                            User
+                        </th>
 
 
-                        <td>
+                        <th>
+                            Role
+                        </th>
 
-                            <strong>
+
+                        <th>
+                            Action Performed
+                        </th>
+
+
+                        <th>
+                            Date
+                        </th>
+
+
+                        <th>
+                            Time
+                        </th>
+
+
+                        <th>
+                            IP Address
+                        </th>
+
+
+                        <th>
+                            Affected Record
+                        </th>
+
+
+                        <th>
+                            Module
+                        </th>
+
+
+                        <th>
+                            Details
+                        </th>
+
+
+                    </tr>
+
+
+                </thead>
+
+
+                <tbody>
+
+
+                    {% for log in logs %}
+
+
+                        <tr>
+
+
+                            <td>
+                                {{ log.audit_id }}
+                            </td>
+
+
+                            <td>
+
+                                <strong>
+                                    {{ log.username }}
+                                </strong>
+
+                            </td>
+
+
+                            <td>
+
+                                {{ log.role or 'Not recorded' }}
+
+                            </td>
+
+
+                            <td>
 
                                 {{ log.action }}
 
-                            </strong>
-
-                        </td>
+                            </td>
 
 
-                        <td>
-
-                            {{ log.created_at }}
-
-                        </td>
+                            <td>
 
 
-                        <td class="details">
-
-                            {{ log.details or '-' }}
-
-                        </td>
+                                {% if log.created_at %}
 
 
-                    </tr>
+                                    {{
+                                        log.created_at.strftime(
+                                            '%Y-%m-%d'
+                                        )
+                                    }}
 
 
-                {% else %}
+                                {% else %}
 
 
-                    <tr>
+                                    -
 
 
-                        <td colspan="5">
-
-                            No audit entries
-                            have been recorded yet.
-
-                        </td>
+                                {% endif %}
 
 
-                    </tr>
+                            </td>
 
 
-                {% endfor %}
+                            <td>
 
 
-            </tbody>
+                                {% if log.created_at %}
 
 
-        </table>
+                                    {{
+                                        log.created_at.strftime(
+                                            '%H:%M:%S'
+                                        )
+                                    }}
+
+
+                                {% else %}
+
+
+                                    -
+
+
+                                {% endif %}
+
+
+                            </td>
+
+
+                            <td>
+
+                                {{
+                                    log.ip_address
+                                    or
+                                    'Not recorded'
+                                }}
+
+                            </td>
+
+
+                            <td>
+
+                                {{
+                                    log.affected_record
+                                    or
+                                    'N/A'
+                                }}
+
+                            </td>
+
+
+                            <td>
+
+
+                                <span class="badge">
+
+                                    {{
+                                        log.module
+                                        or
+                                        'Legacy'
+                                    }}
+
+                                </span>
+
+
+                            </td>
+
+
+                            <td class="details">
+
+                                {{
+                                    log.details
+                                    or
+                                    '-'
+                                }}
+
+                            </td>
+
+
+                        </tr>
+
+
+                    {% else %}
+
+
+                        <tr>
+
+
+                            <td colspan="10">
+
+                                No audit records match
+                                the selected filters.
+
+                            </td>
+
+
+                        </tr>
+
+
+                    {% endfor %}
+
+
+                </tbody>
+
+
+            </table>
+
+
+        </div>
 
 
     </div>
@@ -386,4 +966,4 @@
 
 </body>
 
-</html>
+</html> 

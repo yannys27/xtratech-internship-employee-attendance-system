@@ -423,14 +423,83 @@ def validate_leave_request_input(data):
 # ---------------------------------------------------------
 
 
-def audit_log(action, details=None, username=None):
+def _infer_audit_module(action):
+    """Infer the application module from the audit action text."""
+    value = str(action or "").strip().lower()
+
+    if "leave" in value:
+        return "Leave Management"
+    if "attendance report" in value or "report" in value:
+        return "Reports"
+    if "attendance" in value or "checked in" in value or "checked out" in value:
+        return "Attendance"
+    if "employee" in value:
+        return "Employee Management"
+    if "login" in value or "logout" in value:
+        return "Authentication"
+    if "user" in value or "password" in value:
+        return "User Management"
+    return "System"
+
+
+def _infer_affected_record(action, details):
+    """Extract the main affected record from the existing audit details."""
+    text = str(details or "")
+
+    patterns = [
+        (r"Leave ID:\s*([^;]+)", "Leave Request"),
+        (r"Attendance ID:\s*([^;]+)", "Attendance"),
+        (r"Employee ID:\s*([^;]+)", "Employee"),
+        (r"User ID:\s*([^;]+)", "User"),
+    ]
+
+    for pattern, label in patterns:
+        match = re.search(pattern, text, flags=re.IGNORECASE)
+        if match:
+            return f"{label} #{match.group(1).strip()}"[:150]
+
+    action_value = str(action or "").lower()
+    if "report" in action_value:
+        return "Attendance Report"
+    if "login" in action_value or "logout" in action_value:
+        return "User session"
+
+    return "N/A"
+
+
+def audit_log(
+    action,
+    details=None,
+    username=None,
+    role=None,
+    module=None,
+    affected_record=None,
+):
     """
-    Record an important activity. Audit failures do not break the main action.
-    The phase6_audit_log.sql migration creates the audit_log table safely.
+    Record an important application activity.
+
+    Week 4 records:
+    user, role, action, date/time, IP address, affected record and module.
+    Audit failures never prevent the requested application action from completing.
     """
     audit_username = str(username or session.get("username") or "System")[:50]
-    action = str(action or "Unknown action")[:100]
-    details = str(details) if details else None
+
+    session_role = role or session.get("role")
+    normalized_role = normalize_role(session_role)
+    audit_role = str(normalized_role or session_role or "System")[:50]
+
+    audit_action = str(action or "Unknown action")[:100]
+    audit_details = str(details) if details else None
+    audit_module = str(module or _infer_audit_module(audit_action))[:50]
+    audit_affected_record = str(
+        affected_record or _infer_affected_record(audit_action, audit_details)
+    )[:150]
+
+    try:
+        audit_ip_address = str(request.remote_addr or "Unknown")[:45]
+    except RuntimeError:
+        # Allows the helper to remain safe if it is ever called outside a request.
+        audit_ip_address = "System"
 
     connection = None
     cursor = None
@@ -439,14 +508,30 @@ def audit_log(action, details=None, username=None):
         cursor = connection.cursor()
         cursor.execute(
             """
-            INSERT INTO audit_log (username, action, details)
-            VALUES (%s, %s, %s)
+            INSERT INTO audit_log (
+                username,
+                role,
+                action,
+                details,
+                ip_address,
+                affected_record,
+                module
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             """,
-            (audit_username, action, details),
+            (
+                audit_username,
+                audit_role,
+                audit_action,
+                audit_details,
+                audit_ip_address,
+                audit_affected_record,
+                audit_module,
+            ),
         )
         connection.commit()
     except Error:
-        # Logging should never prevent the requested operation from completing.
+        # Logging must never break the action the user requested.
         pass
     finally:
         if cursor:
@@ -1992,23 +2077,128 @@ def delete_user(user_id):
 @app.route("/audit-log")
 @page_admin_required
 def audit_log_page():
+    filters = {
+        "q": request.args.get("q", "").strip(),
+        "username": request.args.get("username", "").strip(),
+        "role": request.args.get("role", "").strip(),
+        "module": request.args.get("module", "").strip(),
+        "action": request.args.get("action", "").strip(),
+        "date_from": request.args.get("date_from", "").strip(),
+        "date_to": request.args.get("date_to", "").strip(),
+    }
+
     connection = None
     cursor = None
     try:
         connection = get_connection()
         cursor = connection.cursor(dictionary=True)
-        cursor.execute(
-            """
-            SELECT audit_id, username, action, details, created_at
+
+        query = """
+            SELECT
+                audit_id,
+                username,
+                role,
+                action,
+                details,
+                ip_address,
+                affected_record,
+                module,
+                created_at
             FROM audit_log
-            ORDER BY created_at DESC, audit_id DESC
-            LIMIT 200
+            WHERE 1 = 1
+        """
+        params = []
+
+        if filters["q"]:
+            search_value = f"%{filters['q']}%"
+            query += """
+                AND (
+                    username LIKE %s
+                    OR role LIKE %s
+                    OR action LIKE %s
+                    OR COALESCE(details, '') LIKE %s
+                    OR COALESCE(ip_address, '') LIKE %s
+                    OR COALESCE(affected_record, '') LIKE %s
+                    OR COALESCE(module, '') LIKE %s
+                )
             """
-        )
+            params.extend([search_value] * 7)
+
+        if filters["username"]:
+            query += " AND username = %s"
+            params.append(filters["username"])
+
+        if filters["role"]:
+            query += " AND role = %s"
+            params.append(filters["role"])
+
+        if filters["module"]:
+            query += " AND module = %s"
+            params.append(filters["module"])
+
+        if filters["action"]:
+            query += " AND action = %s"
+            params.append(filters["action"])
+
+        if filters["date_from"]:
+            if not valid_date(filters["date_from"]):
+                flash("From date must be a valid date.", "error")
+                filters["date_from"] = ""
+            else:
+                query += " AND DATE(created_at) >= %s"
+                params.append(filters["date_from"])
+
+        if filters["date_to"]:
+            if not valid_date(filters["date_to"]):
+                flash("To date must be a valid date.", "error")
+                filters["date_to"] = ""
+            else:
+                query += " AND DATE(created_at) <= %s"
+                params.append(filters["date_to"])
+
+        if filters["date_from"] and filters["date_to"]:
+            start_date = datetime.strptime(filters["date_from"], "%Y-%m-%d").date()
+            end_date = datetime.strptime(filters["date_to"], "%Y-%m-%d").date()
+            if end_date < start_date:
+                flash("To date cannot be earlier than From date.", "error")
+                return redirect(url_for("audit_log_page"))
+
+        query += " ORDER BY created_at DESC, audit_id DESC LIMIT 500"
+        cursor.execute(query, tuple(params))
         logs = cursor.fetchall()
+
+        cursor.execute(
+            "SELECT DISTINCT username FROM audit_log "
+            "WHERE username IS NOT NULL AND username <> '' ORDER BY username"
+        )
+        usernames = [row["username"] for row in cursor.fetchall()]
+
+        cursor.execute(
+            "SELECT DISTINCT role FROM audit_log "
+            "WHERE role IS NOT NULL AND role <> '' ORDER BY role"
+        )
+        roles = [row["role"] for row in cursor.fetchall()]
+
+        cursor.execute(
+            "SELECT DISTINCT module FROM audit_log "
+            "WHERE module IS NOT NULL AND module <> '' ORDER BY module"
+        )
+        modules = [row["module"] for row in cursor.fetchall()]
+
+        cursor.execute(
+            "SELECT DISTINCT action FROM audit_log "
+            "WHERE action IS NOT NULL AND action <> '' ORDER BY action"
+        )
+        actions = [row["action"] for row in cursor.fetchall()]
+
         return render_template(
             "audit_log.html",
             logs=logs,
+            filters=filters,
+            usernames=usernames,
+            roles=roles,
+            modules=modules,
+            actions=actions,
             username=session.get("username"),
             role=session.get("role"),
         )
@@ -2016,6 +2206,11 @@ def audit_log_page():
         return render_template(
             "audit_log.html",
             logs=[],
+            filters=filters,
+            usernames=[],
+            roles=[],
+            modules=[],
+            actions=[],
             username=session.get("username"),
             role=session.get("role"),
             error=f"Unable to load audit log: {error}",
