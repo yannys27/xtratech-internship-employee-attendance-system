@@ -33,10 +33,13 @@ Config.validate()
 app.config.from_object(Config)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024
+app.config["MAX_CONTENT_LENGTH"] = 12 * 1024 * 1024
 
 EMPLOYEE_UPLOAD_FOLDER = Path(app.root_path) / "uploads" / "employees"
 EMPLOYEE_UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
+
+DOCUMENT_UPLOAD_FOLDER = Path(app.root_path) / "uploads" / "documents"
+DOCUMENT_UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
 
 
 # ---------------------------------------------------------
@@ -54,6 +57,23 @@ ALLOWED_LEAVE_STATUSES = {"Pending", "Approved", "Rejected"}
 ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
 ALLOWED_IMAGE_MIMETYPES = {"image/jpeg", "image/png", "image/webp"}
 MAX_EMPLOYEE_PHOTO_BYTES = 5 * 1024 * 1024
+
+# Phase 7 - Week 5: Employee Documents
+ALLOWED_DOCUMENT_TYPES = {
+    "Employment Contract",
+    "Curriculum Vitae (CV)",
+    "Passport / National ID",
+    "Certificates",
+    "Employee Photograph",
+}
+DOCUMENT_TYPE_EXTENSIONS = {
+    "Employment Contract": {"pdf", "doc", "docx"},
+    "Curriculum Vitae (CV)": {"pdf", "doc", "docx"},
+    "Passport / National ID": {"pdf", "jpg", "jpeg", "png", "webp"},
+    "Certificates": {"pdf", "doc", "docx", "jpg", "jpeg", "png", "webp"},
+    "Employee Photograph": {"jpg", "jpeg", "png", "webp"},
+}
+MAX_EMPLOYEE_DOCUMENT_BYTES = 10 * 1024 * 1024
 
 # Phase 7 - configurable working schedule
 # Defaults come from Config (.env) and can differ by environment.
@@ -378,6 +398,105 @@ def validate_attendance_input(data):
     }, None
 
 
+
+# ---------------------------------------------------------
+# PHASE 7 WEEK 5: EMPLOYEE DOCUMENT HELPERS
+# ---------------------------------------------------------
+
+
+def validate_employee_document(file_storage, document_type):
+    """Validate an uploaded Week 5 employee document."""
+    if document_type not in ALLOWED_DOCUMENT_TYPES:
+        return "Please select a valid document type."
+
+    if not file_storage or not file_storage.filename:
+        return "Please select a document to upload."
+
+    original_name = secure_filename(file_storage.filename)
+    if not original_name or "." not in original_name:
+        return "The selected file must have a valid file extension."
+
+    extension = original_name.rsplit(".", 1)[1].lower()
+    allowed_extensions = DOCUMENT_TYPE_EXTENSIONS.get(document_type, set())
+
+    if extension not in allowed_extensions:
+        allowed_display = ", ".join(sorted(ext.upper() for ext in allowed_extensions))
+        return f"{document_type} must use one of these file types: {allowed_display}."
+
+    position = file_storage.stream.tell()
+    file_storage.stream.seek(0, 2)
+    size = file_storage.stream.tell()
+    file_storage.stream.seek(position)
+
+    if size <= 0:
+        return "The selected document is empty."
+    if size > MAX_EMPLOYEE_DOCUMENT_BYTES:
+        return "Employee documents must not exceed 10 MB."
+
+    return None
+
+
+def save_employee_document(file_storage):
+    """Store a document with a random server-side filename."""
+    original_name = secure_filename(file_storage.filename)
+    extension = original_name.rsplit(".", 1)[1].lower()
+    stored_filename = f"{uuid4().hex}.{extension}"
+    file_storage.save(DOCUMENT_UPLOAD_FOLDER / stored_filename)
+    return stored_filename, original_name
+
+
+def remove_employee_document_file(stored_filename):
+    """Remove a stored employee document without allowing path traversal."""
+    if not stored_filename:
+        return
+
+    safe_name = Path(str(stored_filename)).name
+    target = DOCUMENT_UPLOAD_FOLDER / safe_name
+
+    try:
+        if target.is_file():
+            target.unlink()
+    except OSError:
+        pass
+
+
+def fetch_employee_document(document_id):
+    connection = None
+    cursor = None
+
+    try:
+        connection = get_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute(
+            """
+            SELECT
+                employee_documents.document_id,
+                employee_documents.employee_id,
+                employee_documents.document_type,
+                employee_documents.original_filename,
+                employee_documents.stored_filename,
+                employee_documents.mime_type,
+                employee_documents.file_size,
+                employee_documents.uploaded_by,
+                employee_documents.created_at,
+                employees.employee_number,
+                employees.first_name,
+                employees.last_name
+            FROM employee_documents
+            JOIN employees
+                ON employee_documents.employee_id = employees.employee_id
+            WHERE employee_documents.document_id = %s
+            """,
+            (document_id,),
+        )
+        return cursor.fetchone()
+    finally:
+        if cursor:
+            cursor.close()
+        if connection and connection.is_connected():
+            connection.close()
+
+
 # ---------------------------------------------------------
 # PHASE 7 WEEK 3: LEAVE VALIDATION HELPERS
 # ---------------------------------------------------------
@@ -427,6 +546,8 @@ def _infer_audit_module(action):
     """Infer the application module from the audit action text."""
     value = str(action or "").strip().lower()
 
+    if "document" in value:
+        return "Employee Documents"
     if "leave" in value:
         return "Leave Management"
     if "attendance report" in value or "report" in value:
@@ -447,6 +568,7 @@ def _infer_affected_record(action, details):
     text = str(details or "")
 
     patterns = [
+        (r"Document ID:\s*([^;]+)", "Employee Document"),
         (r"Leave ID:\s*([^;]+)", "Leave Request"),
         (r"Attendance ID:\s*([^;]+)", "Attendance"),
         (r"Employee ID:\s*([^;]+)", "Employee"),
@@ -648,6 +770,19 @@ def api_leave_approver_required(function):
             return jsonify({"error": "Login required"}), 401
         if session.get("role") not in {ADMIN_ROLE, HR_ROLE}:
             return jsonify({"error": "HR Officer or Administrator access required"}), 403
+        return function(*args, **kwargs)
+    return decorated_function
+
+
+def page_document_access_required(function):
+    """Allow only HR Officers and Administrators to access employee documents."""
+    @wraps(function)
+    def decorated_function(*args, **kwargs):
+        if not refresh_session_user():
+            return redirect(url_for("login_page"))
+        if session.get("role") not in {ADMIN_ROLE, HR_ROLE}:
+            flash("HR Officer or Administrator access is required.", "error")
+            return redirect(url_for("dashboard"))
         return function(*args, **kwargs)
     return decorated_function
 
@@ -1139,6 +1274,377 @@ def edit_employee_profile(employee_id):
         if connection and connection.is_connected():
             connection.close()
     return redirect(url_for("employee_profile_page", employee_id=employee_id))
+
+
+
+# ---------------------------------------------------------
+# PHASE 7 WEEK 5: EMPLOYEE DOCUMENT MANAGEMENT
+# ---------------------------------------------------------
+
+
+@app.route("/employee-documents")
+@page_document_access_required
+def employee_documents_page():
+    employee_filter = str(request.args.get("employee_id", "")).strip()
+    document_type_filter = str(request.args.get("document_type", "")).strip()
+
+    connection = None
+    cursor = None
+
+    try:
+        connection = get_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        cursor.execute(
+            """
+            SELECT employee_id, employee_number, first_name, last_name
+            FROM employees
+            ORDER BY first_name, last_name
+            """
+        )
+        employees = cursor.fetchall()
+
+        query = """
+            SELECT
+                employee_documents.document_id,
+                employee_documents.employee_id,
+                employee_documents.document_type,
+                employee_documents.original_filename,
+                employee_documents.mime_type,
+                employee_documents.file_size,
+                employee_documents.uploaded_by,
+                employee_documents.created_at,
+                employees.employee_number,
+                employees.first_name,
+                employees.last_name
+            FROM employee_documents
+            JOIN employees
+                ON employee_documents.employee_id = employees.employee_id
+            WHERE 1 = 1
+        """
+        params = []
+
+        if employee_filter:
+            try:
+                employee_id = int(employee_filter)
+                if employee_id <= 0:
+                    raise ValueError
+                query += " AND employee_documents.employee_id = %s"
+                params.append(employee_id)
+            except ValueError:
+                flash("Please select a valid employee.", "error")
+                employee_filter = ""
+
+        if document_type_filter:
+            if document_type_filter not in ALLOWED_DOCUMENT_TYPES:
+                flash("Please select a valid document type.", "error")
+                document_type_filter = ""
+            else:
+                query += " AND employee_documents.document_type = %s"
+                params.append(document_type_filter)
+
+        query += """
+            ORDER BY
+                employee_documents.created_at DESC,
+                employee_documents.document_id DESC
+        """
+
+        cursor.execute(query, tuple(params))
+        documents = cursor.fetchall()
+
+        return render_template(
+            "employee_documents.html",
+            employees=employees,
+            documents=documents,
+            document_types=[
+                "Employment Contract",
+                "Curriculum Vitae (CV)",
+                "Passport / National ID",
+                "Certificates",
+                "Employee Photograph",
+            ],
+            filters={
+                "employee_id": employee_filter,
+                "document_type": document_type_filter,
+            },
+            username=session.get("username"),
+            role=session.get("role"),
+        )
+
+    except Error as error:
+        return render_template(
+            "employee_documents.html",
+            employees=[],
+            documents=[],
+            document_types=[
+                "Employment Contract",
+                "Curriculum Vitae (CV)",
+                "Passport / National ID",
+                "Certificates",
+                "Employee Photograph",
+            ],
+            filters={
+                "employee_id": employee_filter,
+                "document_type": document_type_filter,
+            },
+            username=session.get("username"),
+            role=session.get("role"),
+            error=f"Unable to load employee documents: {error}",
+        ), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if connection and connection.is_connected():
+            connection.close()
+
+
+@app.route("/employee-documents/upload", methods=["POST"])
+@page_document_access_required
+def upload_employee_document():
+    employee_id_raw = str(request.form.get("employee_id", "")).strip()
+    document_type = str(request.form.get("document_type", "")).strip()
+    file_storage = request.files.get("document")
+
+    try:
+        employee_id = int(employee_id_raw)
+        if employee_id <= 0:
+            raise ValueError
+    except ValueError:
+        flash("Please select a valid employee.", "error")
+        return redirect(url_for("employee_documents_page"))
+
+    validation_error = validate_employee_document(file_storage, document_type)
+    if validation_error:
+        flash(validation_error, "error")
+        return redirect(url_for("employee_documents_page", employee_id=employee_id))
+
+    connection = None
+    cursor = None
+    stored_filename = None
+
+    try:
+        connection = get_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        cursor.execute(
+            """
+            SELECT employee_id, employee_number, first_name, last_name
+            FROM employees
+            WHERE employee_id = %s
+            """,
+            (employee_id,),
+        )
+        employee = cursor.fetchone()
+
+        if not employee:
+            flash("The selected employee does not exist.", "error")
+            return redirect(url_for("employee_documents_page"))
+
+        stored_filename, original_filename = save_employee_document(file_storage)
+
+        file_size = (DOCUMENT_UPLOAD_FOLDER / stored_filename).stat().st_size
+        mime_type = str(file_storage.mimetype or "application/octet-stream")[:100]
+
+        cursor.execute(
+            """
+            INSERT INTO employee_documents (
+                employee_id,
+                document_type,
+                original_filename,
+                stored_filename,
+                mime_type,
+                file_size,
+                uploaded_by
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                employee_id,
+                document_type,
+                original_filename,
+                stored_filename,
+                mime_type,
+                file_size,
+                session.get("username"),
+            ),
+        )
+        document_id = cursor.lastrowid
+        connection.commit()
+
+        audit_log(
+            "Employee document uploaded",
+            f"Document ID: {document_id}; Employee ID: {employee_id}; "
+            f"employee: {employee['first_name']} {employee['last_name']}; "
+            f"type: {document_type}; file: {original_filename}",
+            module="Employee Documents",
+            affected_record=f"Employee Document #{document_id}",
+        )
+
+        flash("Employee document uploaded successfully.", "success")
+
+    except Error as error:
+        if stored_filename:
+            remove_employee_document_file(stored_filename)
+        flash(f"Unable to upload employee document: {error}", "error")
+
+    finally:
+        if cursor:
+            cursor.close()
+        if connection and connection.is_connected():
+            connection.close()
+
+    return redirect(url_for("employee_documents_page", employee_id=employee_id))
+
+
+@app.route("/employee-documents/<int:document_id>/view")
+@page_document_access_required
+def view_employee_document(document_id):
+    try:
+        document = fetch_employee_document(document_id)
+
+        if not document:
+            flash("Employee document not found.", "error")
+            return redirect(url_for("employee_documents_page"))
+
+        stored_filename = Path(str(document["stored_filename"])).name
+        target = DOCUMENT_UPLOAD_FOLDER / stored_filename
+
+        if not target.is_file():
+            flash("The stored document file could not be found.", "error")
+            return redirect(
+                url_for("employee_documents_page", employee_id=document["employee_id"])
+            )
+
+        audit_log(
+            "Employee document viewed",
+            f"Document ID: {document_id}; Employee ID: {document['employee_id']}; "
+            f"type: {document['document_type']}; file: {document['original_filename']}",
+            module="Employee Documents",
+            affected_record=f"Employee Document #{document_id}",
+        )
+
+        return send_from_directory(
+            DOCUMENT_UPLOAD_FOLDER,
+            stored_filename,
+            as_attachment=False,
+            download_name=document["original_filename"],
+            mimetype=document["mime_type"] or None,
+        )
+
+    except Error as error:
+        flash(f"Unable to open employee document: {error}", "error")
+        return redirect(url_for("employee_documents_page"))
+
+
+@app.route("/employee-documents/<int:document_id>/download")
+@page_document_access_required
+def download_employee_document(document_id):
+    try:
+        document = fetch_employee_document(document_id)
+
+        if not document:
+            flash("Employee document not found.", "error")
+            return redirect(url_for("employee_documents_page"))
+
+        stored_filename = Path(str(document["stored_filename"])).name
+        target = DOCUMENT_UPLOAD_FOLDER / stored_filename
+
+        if not target.is_file():
+            flash("The stored document file could not be found.", "error")
+            return redirect(
+                url_for("employee_documents_page", employee_id=document["employee_id"])
+            )
+
+        audit_log(
+            "Employee document downloaded",
+            f"Document ID: {document_id}; Employee ID: {document['employee_id']}; "
+            f"type: {document['document_type']}; file: {document['original_filename']}",
+            module="Employee Documents",
+            affected_record=f"Employee Document #{document_id}",
+        )
+
+        return send_from_directory(
+            DOCUMENT_UPLOAD_FOLDER,
+            stored_filename,
+            as_attachment=True,
+            download_name=document["original_filename"],
+            mimetype=document["mime_type"] or None,
+        )
+
+    except Error as error:
+        flash(f"Unable to download employee document: {error}", "error")
+        return redirect(url_for("employee_documents_page"))
+
+
+@app.route("/employee-documents/<int:document_id>/delete", methods=["POST"])
+@page_document_access_required
+def delete_employee_document(document_id):
+    connection = None
+    cursor = None
+    document = None
+
+    try:
+        connection = get_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        cursor.execute(
+            """
+            SELECT
+                employee_documents.document_id,
+                employee_documents.employee_id,
+                employee_documents.document_type,
+                employee_documents.original_filename,
+                employee_documents.stored_filename,
+                employees.first_name,
+                employees.last_name
+            FROM employee_documents
+            JOIN employees
+                ON employee_documents.employee_id = employees.employee_id
+            WHERE employee_documents.document_id = %s
+            """,
+            (document_id,),
+        )
+        document = cursor.fetchone()
+
+        if not document:
+            flash("Employee document not found.", "error")
+            return redirect(url_for("employee_documents_page"))
+
+        cursor.execute(
+            "DELETE FROM employee_documents WHERE document_id = %s",
+            (document_id,),
+        )
+        connection.commit()
+
+        remove_employee_document_file(document["stored_filename"])
+
+        audit_log(
+            "Employee document deleted",
+            f"Document ID: {document_id}; Employee ID: {document['employee_id']}; "
+            f"employee: {document['first_name']} {document['last_name']}; "
+            f"type: {document['document_type']}; file: {document['original_filename']}",
+            module="Employee Documents",
+            affected_record=f"Employee Document #{document_id}",
+        )
+
+        flash("Employee document deleted successfully.", "success")
+
+    except Error as error:
+        flash(f"Unable to delete employee document: {error}", "error")
+
+    finally:
+        if cursor:
+            cursor.close()
+        if connection and connection.is_connected():
+            connection.close()
+
+    if document:
+        return redirect(
+            url_for("employee_documents_page", employee_id=document["employee_id"])
+        )
+
+    return redirect(url_for("employee_documents_page"))
 
 
 @app.route("/attendance-page")

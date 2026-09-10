@@ -2,15 +2,11 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Employee Profile</title>
 
     <style>
-
         * {
             box-sizing: border-box;
         }
@@ -185,15 +181,12 @@
         }
 
         @media (max-width: 900px) {
-
             .form-grid {
                 grid-template-columns: 1fr 1fr;
             }
-
         }
 
         @media (max-width: 620px) {
-
             .form-grid {
                 grid-template-columns: 1fr;
             }
@@ -212,20 +205,15 @@
                 align-items: flex-start;
                 gap: 8px;
             }
-
         }
-
     </style>
-
 </head>
 
 <body>
 
 <div class="navbar">
 
-    <h2>
-        Employee Profile
-    </h2>
+    <h2>Employee Profile</h2>
 
     <div>
         <strong>{{ username }}</strong> — {{ role }}
@@ -233,17 +221,26 @@
 
 </div>
 
-
 <div class="container">
 
     <a
         class="button"
         href="/employees-page">
-
         Back to Employee List
-
     </a>
 
+    {% if role in ['Administrator', 'HR Officer'] %}
+
+        <a
+            class="button"
+            href="{{ url_for('employee_documents_page', employee_id=employee.employee_id) }}"
+            style="margin-left:8px;">
+
+            Employee Documents
+
+        </a>
+
+    {% endif %}
 
     {% with messages = get_flashed_messages(with_categories=true) %}
 
@@ -256,7 +253,6 @@
         {% endfor %}
 
     {% endwith %}
-
 
     <div class="panel">
 
@@ -277,7 +273,6 @@
 
             {% endif %}
 
-
             <div>
 
                 <h1>
@@ -294,14 +289,9 @@
 
                 </div>
 
-                <div
-                    class="muted"
-                    style="margin-top:5px;">
-
+                <div class="muted" style="margin-top:5px;">
                     {{ employee.department_name or 'Department not assigned' }}
-
                 </div>
-
 
                 <div style="margin-top:10px;">
 
@@ -325,35 +315,22 @@
 
         </div>
 
-
-        <h2>
-            Edit Employee Information
-        </h2>
-
+        <h2>Edit Employee Information</h2>
 
         <p class="muted">
-
             Legacy employee records may have blank Phase 7 fields.
-
             Complete every required field before saving.
-
         </p>
-
 
         <form
             action="{{ url_for('edit_employee_profile', employee_id=employee.employee_id) }}"
             method="POST"
             enctype="multipart/form-data">
 
-
             <div class="form-grid">
 
-
                 <div>
-
-                    <label>
-                        Employee Number *
-                    </label>
+                    <label>Employee Number *</label>
 
                     <input
                         type="text"
@@ -361,15 +338,10 @@
                         maxlength="30"
                         value="{{ employee.employee_number or '' }}"
                         required>
-
                 </div>
 
-
                 <div>
-
-                    <label>
-                        National ID / Passport Number *
-                    </label>
+                    <label>National ID / Passport Number *</label>
 
                     <input
                         type="text"
@@ -377,54 +349,34 @@
                         maxlength="50"
                         value="{{ employee.national_id_passport or '' }}"
                         required>
-
                 </div>
 
-
                 <div>
-
-                    <label>
-                        Employment Status *
-                    </label>
+                    <label>Employment Status *</label>
 
                     <select
                         name="employment_status"
                         required>
 
-
                         {% for status in employment_statuses %}
 
                             <option
                                 value="{{ status }}"
-
-                                {% if
-                                    (employee.employment_status or 'Active')
-                                    == status
-                                %}
-
+                                {% if (employee.employment_status or 'Active') == status %}
                                     selected
-
                                 {% endif %}>
 
-
                                 {{ status }}
-
 
                             </option>
 
                         {% endfor %}
 
-
                     </select>
-
                 </div>
 
-
                 <div>
-
-                    <label>
-                        First Name *
-                    </label>
+                    <label>First Name *</label>
 
                     <input
                         type="text"
@@ -432,15 +384,10 @@
                         maxlength="50"
                         value="{{ employee.first_name }}"
                         required>
-
                 </div>
 
-
                 <div>
-
-                    <label>
-                        Last Name *
-                    </label>
+                    <label>Last Name *</label>
 
                     <input
                         type="text"
@@ -448,69 +395,48 @@
                         maxlength="50"
                         value="{{ employee.last_name }}"
                         required>
-
                 </div>
 
-
                 <div>
-
-                    <label>
-                        Date of Birth *
-                    </label>
+                    <label>Date of Birth *</label>
 
                     <input
                         type="date"
                         name="date_of_birth"
                         value="{{ employee.date_of_birth or '' }}"
                         required>
-
                 </div>
 
-
                 <div>
-
-                    <label>
-                        Gender *
-                    </label>
+                    <label>Gender *</label>
 
                     <select
                         name="gender"
                         required>
 
-
                         <option value="">
                             Select gender
                         </option>
-
 
                         {% for gender in genders %}
 
                             <option
                                 value="{{ gender }}"
-
                                 {% if employee.gender == gender %}
                                     selected
                                 {% endif %}>
 
-
                                 {{ gender }}
-
 
                             </option>
 
                         {% endfor %}
 
-
                     </select>
-
                 </div>
 
-
                 <div>
-
-                    <label>
-                        Telephone Number *
-                    </label>
+                    <label>Telephone Number *</label>
 
                     <input
                         type="tel"
@@ -518,15 +444,10 @@
                         maxlength="30"
                         value="{{ employee.phone or '' }}"
                         required>
-
                 </div>
 
-
                 <div>
-
-                    <label>
-                        Email Address *
-                    </label>
+                    <label>Email Address *</label>
 
                     <input
                         type="email"
@@ -534,15 +455,10 @@
                         maxlength="100"
                         value="{{ employee.email or '' }}"
                         required>
-
                 </div>
 
-
                 <div>
-
-                    <label>
-                        Job Position *
-                    </label>
+                    <label>Job Position *</label>
 
                     <input
                         type="text"
@@ -550,75 +466,49 @@
                         maxlength="100"
                         value="{{ employee.job_position or '' }}"
                         required>
-
                 </div>
 
-
                 <div>
-
-                    <label>
-                        Department *
-                    </label>
+                    <label>Department *</label>
 
                     <select
                         name="department_id"
                         required>
 
-
                         <option value="">
                             Select department
                         </option>
-
 
                         {% for department in departments %}
 
                             <option
                                 value="{{ department.department_id }}"
-
-                                {% if
-                                    employee.department_id
-                                    ==
-                                    department.department_id
-                                %}
-
+                                {% if employee.department_id == department.department_id %}
                                     selected
-
                                 {% endif %}>
 
-
                                 {{ department.department_name }}
-
 
                             </option>
 
                         {% endfor %}
 
-
                     </select>
-
                 </div>
 
-
                 <div>
-
-                    <label>
-                        Hire Date *
-                    </label>
+                    <label>Hire Date *</label>
 
                     <input
                         type="date"
                         name="hire_date"
                         value="{{ employee.hire_date or '' }}"
                         required>
-
                 </div>
-
 
                 <div class="full">
 
-                    <label>
-                        Residential Address *
-                    </label>
+                    <label>Residential Address *</label>
 
                     <textarea
                         name="residential_address"
@@ -627,52 +517,44 @@
 
                 </div>
 
-
                 {% if role == 'Administrator' %}
 
-                <div class="full">
+                    <div class="full">
 
-                    <label>
-                        Employee Photograph
-                    </label>
+                        <label>
+                            Employee Photograph
+                        </label>
 
-                    <input
-                        type="file"
-                        name="photo"
-                        accept="image/jpeg,image/png,image/webp">
+                        <input
+                            type="file"
+                            name="photo"
+                            accept="image/jpeg,image/png,image/webp">
 
+                        <div class="hint">
+                            Upload a new JPG, PNG or WEBP image to replace the current photograph.
+                            Maximum 5 MB.
+                        </div>
 
-                    <div class="hint">
+                        {% if employee.photo_filename %}
 
-                        Upload a new JPG, PNG or WEBP image to replace the current photograph.
+                            <label class="remove-photo">
 
-                        Maximum 5 MB.
+                                <input
+                                    type="checkbox"
+                                    name="remove_photo"
+                                    value="1">
+
+                                Remove current photograph
+
+                            </label>
+
+                        {% endif %}
 
                     </div>
 
-
-                    {% if employee.photo_filename %}
-
-                    <label class="remove-photo">
-
-                        <input
-                            type="checkbox"
-                            name="remove_photo"
-                            value="1">
-
-                        Remove current photograph
-
-                    </label>
-
-                    {% endif %}
-
-                </div>
-
                 {% endif %}
 
-
             </div>
-
 
             <div style="margin-top:18px;">
 
@@ -686,7 +568,6 @@
 
             </div>
 
-
         </form>
 
     </div>
@@ -694,5 +575,4 @@
 </div>
 
 </body>
-
 </html>

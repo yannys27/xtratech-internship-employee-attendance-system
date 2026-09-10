@@ -2,15 +2,11 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Dashboard</title>
 
     <style>
-
         * {
             box-sizing: border-box;
         }
@@ -147,7 +143,6 @@
         }
 
         @media (max-width: 650px) {
-
             .navbar {
                 align-items: flex-start;
                 flex-direction: column;
@@ -164,11 +159,8 @@
             .panel {
                 overflow-x: auto;
             }
-
         }
-
     </style>
-
 </head>
 
 <body>
@@ -180,43 +172,28 @@
     </h2>
 
     <div class="user-info">
-
-        <strong>
-            {{ username }}
-        </strong>
-
+        <strong>{{ username }}</strong>
         <br>
-
         {{ role }}
-
     </div>
 
 </div>
 
-
 <div class="container">
 
     {% with messages = get_flashed_messages(with_categories=true) %}
-
         {% for category, message in messages %}
-
             <div class="flash-{{ category }}">
                 {{ message }}
             </div>
-
         {% endfor %}
-
     {% endwith %}
 
-
     {% if error %}
-
         <div class="error">
             {{ error }}
         </div>
-
     {% endif %}
-
 
     <div class="menu">
 
@@ -228,10 +205,19 @@
             Attendance Management
         </a>
 
+        <a href="/leave-management">
+            Leave Management
+        </a>
+
+        {% if role in ['Administrator', 'HR Officer'] %}
+            <a href="/employee-documents">
+                Employee Documents
+            </a>
+        {% endif %}
+
         <a href="/reports-page">
             Reports
         </a>
-
 
         {% if role == 'Administrator' %}
 
@@ -245,182 +231,106 @@
 
         {% endif %}
 
-
-        <a
-            class="logout"
-            href="/logout">
-
+        <a class="logout" href="/logout">
             Logout
-
         </a>
 
     </div>
 
-
     <div class="cards">
 
-
         <div class="card">
-
-            <h3>
-                Total Employees
-            </h3>
+            <h3>Total Employees</h3>
 
             <div class="number">
-
                 {{ stats.total_employees }}
-
             </div>
-
         </div>
 
-
         <div class="card">
-
-            <h3>
-                Employees Present Today
-            </h3>
+            <h3>Employees Present Today</h3>
 
             <div class="number">
-
                 {{ stats.present_today }}
-
             </div>
-
         </div>
 
-
         <div class="card">
-
-            <h3>
-                Employees Absent Today
-            </h3>
+            <h3>Employees Absent Today</h3>
 
             <div class="number">
-
                 {{ stats.absent_today }}
-
             </div>
-
         </div>
-
 
         <div class="card">
-
-            <h3>
-                Attendance Records This Week
-            </h3>
+            <h3>Attendance Records This Week</h3>
 
             <div class="number">
-
                 {{ stats.weekly_attendance }}
-
             </div>
-
         </div>
-
 
     </div>
 
-
     <div class="panel">
 
-        <h2>
-            Recent Attendance Activities
-        </h2>
-
+        <h2>Recent Attendance Activities</h2>
 
         {% if recent_activities %}
-
 
             <table>
 
                 <tr>
-
-                    <th>
-                        Employee
-                    </th>
-
-                    <th>
-                        Date
-                    </th>
-
-                    <th>
-                        Check In
-                    </th>
-
-                    <th>
-                        Check Out
-                    </th>
-
-                    <th>
-                        Status
-                    </th>
-
+                    <th>Employee</th>
+                    <th>Date</th>
+                    <th>Check In</th>
+                    <th>Check Out</th>
+                    <th>Status</th>
                 </tr>
 
-
                 {% for record in recent_activities %}
-
 
                     <tr>
 
                         <td>
-
                             {{ record.first_name }}
                             {{ record.last_name }}
-
                         </td>
 
                         <td>
-
                             {{ record.date }}
-
                         </td>
 
                         <td>
-
                             {{ record.check_in_time or '-' }}
-
                         </td>
 
                         <td>
-
                             {{ record.check_out_time or '-' }}
-
                         </td>
 
                         <td class="status">
-
                             {{ record.status }}
-
                         </td>
 
                     </tr>
 
-
                 {% endfor %}
-
 
             </table>
 
-
         {% else %}
-
 
             <p>
                 No attendance activity has been recorded yet.
             </p>
 
-
         {% endif %}
 
-
     </div>
-
 
 </div>
 
 </body>
-
 </html>

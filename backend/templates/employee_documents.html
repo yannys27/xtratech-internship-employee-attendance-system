@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Employee Documents</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f4f6f9;
+            margin: 0;
+            color: #222;
+        }
+
+        .navbar {
+            background: #007BFF;
+            color: white;
+            padding: 18px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar h2 {
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1450px;
+            margin: auto;
+            padding: 30px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 10px 15px;
+            border: 0;
+            border-radius: 6px;
+            color: white;
+            background: #007BFF;
+            text-decoration: none;
+            cursor: pointer;
+            font: inherit;
+        }
+
+        .button:hover {
+            opacity: .92;
+        }
+
+        .green {
+            background: #198754;
+        }
+
+        .red {
+            background: #dc3545;
+        }
+
+        .gray {
+            background: #6c757d;
+        }
+
+        .panel {
+            background: white;
+            padding: 22px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,.08);
+            margin-top: 22px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1.5fr 1.3fr 2fr auto;
+            gap: 14px;
+            align-items: end;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: 1.5fr 1.3fr auto;
+            gap: 14px;
+            align-items: end;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cfd4da;
+            border-radius: 5px;
+            background: white;
+            font: inherit;
+        }
+
+        .hint,
+        .muted {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .flash-success {
+            background: #d1e7dd;
+            color: #0f5132;
+            border: 1px solid #badbcc;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 18px;
+        }
+
+        .flash-error,
+        .error {
+            background: #f8d7da;
+            color: #842029;
+            border: 1px solid #f5c2c7;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 18px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 7px;
+            flex-wrap: wrap;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            min-width: 1100px;
+        }
+
+        th,
+        td {
+            padding: 11px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #eef2f6;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 9px;
+            border-radius: 14px;
+            color: white;
+            background: #007BFF;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 950px) {
+            .form-grid,
+            .filter-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 620px) {
+            .form-grid,
+            .filter-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 18px;
+            }
+
+            .navbar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="navbar">
+
+    <h2>Employee Documents</h2>
+
+    <div>
+        <strong>{{ username }}</strong> — {{ role }}
+    </div>
+
+</div>
+
+<div class="container">
+
+    <a
+        class="button"
+        href="/dashboard">
+
+        Back to Dashboard
+
+    </a>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+
+        {% for category, message in messages %}
+
+            <div class="flash-{{ category }}">
+                {{ message }}
+            </div>
+
+        {% endfor %}
+
+    {% endwith %}
+
+    {% if error %}
+
+        <div class="error">
+            {{ error }}
+        </div>
+
+    {% endif %}
+
+    <div class="panel">
+
+        <h2>
+            Upload Employee Document
+        </h2>
+
+        <p class="muted">
+            Documents are associated with an employee and can only be accessed by
+            Administrators and HR Officers.
+        </p>
+
+        <form
+            action="/employee-documents/upload"
+            method="POST"
+            enctype="multipart/form-data">
+
+            <div class="form-grid">
+
+                <div>
+
+                    <label>Employee *</label>
+
+                    <select
+                        name="employee_id"
+                        required>
+
+                        <option value="">
+                            Select employee
+                        </option>
+
+                        {% for employee in employees %}
+
+                            <option
+                                value="{{ employee.employee_id }}"
+                                {% if filters.employee_id|string == employee.employee_id|string %}
+                                    selected
+                                {% endif %}>
+
+                                {{ employee.employee_number }}
+                                —
+                                {{ employee.first_name }}
+                                {{ employee.last_name }}
+
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+                <div>
+
+                    <label>
+                        Document Type *
+                    </label>
+
+                    <select
+                        name="document_type"
+                        required>
+
+                        <option value="">
+                            Select document type
+                        </option>
+
+                        {% for document_type in document_types %}
+
+                            <option value="{{ document_type }}">
+                                {{ document_type }}
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+                <div>
+
+                    <label>
+                        Document *
+                    </label>
+
+                    <input
+                        type="file"
+                        name="document"
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
+                        required>
+
+                    <div class="hint">
+                        Maximum 10 MB. Allowed formats depend on the selected document type.
+                    </div>
+
+                </div>
+
+                <button
+                    class="button green"
+                    type="submit">
+
+                    Upload Document
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+    <div class="panel">
+
+        <h2>
+            Filter Documents
+        </h2>
+
+        <form
+            method="GET"
+            action="/employee-documents">
+
+            <div class="filter-grid">
+
+                <div>
+
+                    <label>
+                        Employee
+                    </label>
+
+                    <select name="employee_id">
+
+                        <option value="">
+                            All employees
+                        </option>
+
+                        {% for employee in employees %}
+
+                            <option
+                                value="{{ employee.employee_id }}"
+                                {% if filters.employee_id|string == employee.employee_id|string %}
+                                    selected
+                                {% endif %}>
+
+                                {{ employee.employee_number }}
+                                —
+                                {{ employee.first_name }}
+                                {{ employee.last_name }}
+
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+                <div>
+
+                    <label>
+                        Document Type
+                    </label>
+
+                    <select name="document_type">
+
+                        <option value="">
+                            All document types
+                        </option>
+
+                        {% for document_type in document_types %}
+
+                            <option
+                                value="{{ document_type }}"
+                                {% if filters.document_type == document_type %}
+                                    selected
+                                {% endif %}>
+
+                                {{ document_type }}
+
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+                <div class="actions">
+
+                    <button
+                        class="button green"
+                        type="submit">
+
+                        Apply Filters
+
+                    </button>
+
+                    <a
+                        class="button gray"
+                        href="/employee-documents">
+
+                        Clear
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </form>
+
+    </div>
+
+    <div class="panel">
+
+        <h2>
+            Stored Documents
+        </h2>
+
+        <p class="muted">
+            {{ documents|length }} document(s) displayed.
+        </p>
+
+        <div class="table-wrap">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>ID</th>
+                        <th>Employee</th>
+                        <th>Document Type</th>
+                        <th>File</th>
+                        <th>Size</th>
+                        <th>Uploaded By</th>
+                        <th>Uploaded At</th>
+                        <th>Actions</th>
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for document in documents %}
+
+                        <tr>
+
+                            <td>
+                                {{ document.document_id }}
+                            </td>
+
+                            <td>
+
+                                <strong>
+                                    {{ document.first_name }}
+                                    {{ document.last_name }}
+                                </strong>
+
+                                <br>
+
+                                <span class="muted">
+                                    {{ document.employee_number }}
+                                </span>
+
+                            </td>
+
+                            <td>
+
+                                <span class="badge">
+                                    {{ document.document_type }}
+                                </span>
+
+                            </td>
+
+                            <td>
+                                {{ document.original_filename }}
+                            </td>
+
+                            <td>
+
+                                {% if document.file_size >= 1048576 %}
+
+                                    {{ '%.2f'|format(document.file_size / 1048576) }} MB
+
+                                {% else %}
+
+                                    {{ '%.1f'|format(document.file_size / 1024) }} KB
+
+                                {% endif %}
+
+                            </td>
+
+                            <td>
+                                {{ document.uploaded_by or '-' }}
+                            </td>
+
+                            <td>
+                                {{ document.created_at }}
+                            </td>
+
+                            <td>
+
+                                <div class="actions">
+
+                                    <a
+                                        class="button"
+                                        href="{{ url_for('view_employee_document', document_id=document.document_id) }}"
+                                        target="_blank">
+
+                                        View
+
+                                    </a>
+
+                                    <a
+                                        class="button green"
+                                        href="{{ url_for('download_employee_document', document_id=document.document_id) }}">
+
+                                        Download
+
+                                    </a>
+
+                                    <form
+                                        action="{{ url_for('delete_employee_document', document_id=document.document_id) }}"
+                                        method="POST"
+                                        onsubmit="return confirm('Delete this employee document?');">
+
+                                        <button
+                                            class="button red"
+                                            type="submit">
+
+                                            Delete
+
+                                        </button>
+
+                                    </form>
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+
+                    {% else %}
+
+                        <tr>
+
+                            <td colspan="8">
+                                No employee documents have been uploaded yet.
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
