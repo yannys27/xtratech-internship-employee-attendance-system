@@ -1,6 +1,7 @@
 import csv
 import io
 import re
+import zipfile
 from datetime import date, datetime, time
 from pathlib import Path
 from uuid import uuid4
@@ -249,8 +250,11 @@ def validate_employee_photo(file_storage):
     extension = safe_name.rsplit(".", 1)[1].lower()
     if extension not in ALLOWED_IMAGE_EXTENSIONS:
         return "Employee photograph must be a JPG, JPEG, PNG or WEBP image."
-    if file_storage.mimetype not in ALLOWED_IMAGE_MIMETYPES:
-        return "The uploaded file is not a supported image type."
+
+    # Validate the actual image signature instead of trusting the client MIME type.
+    actual_mime = detect_employee_document_mime(file_storage, extension)
+    if actual_mime not in ALLOWED_IMAGE_MIMETYPES:
+        return "The uploaded file content does not match the selected image type."
 
     position = file_storage.stream.tell()
     file_storage.stream.seek(0, 2)
@@ -404,24 +408,112 @@ def validate_attendance_input(data):
 # ---------------------------------------------------------
 
 
+def _read_uploaded_file_bytes(file_storage, max_bytes):
+    """Read an upload safely and restore the stream position afterwards."""
+    position = file_storage.stream.tell()
+    try:
+        file_storage.stream.seek(0)
+        return file_storage.stream.read(max_bytes + 1)
+    finally:
+        file_storage.stream.seek(position)
+
+
+def detect_employee_document_mime(file_storage, extension):
+    """
+    Detect the real file type from file content, not from the browser MIME type.
+
+    Supported signatures:
+    - PDF
+    - JPEG
+    - PNG
+    - WEBP
+    - DOCX (ZIP package containing Word document parts)
+    - legacy DOC (OLE compound file containing WordDocument stream marker)
+    """
+    data = _read_uploaded_file_bytes(file_storage, MAX_EMPLOYEE_DOCUMENT_BYTES)
+
+    if len(data) > MAX_EMPLOYEE_DOCUMENT_BYTES:
+        return None
+
+    if extension == "pdf":
+        if data.startswith(b"%PDF-"):
+            return "application/pdf"
+        return None
+
+    if extension in {"jpg", "jpeg"}:
+        if len(data) >= 3 and data[:3] == b"\xff\xd8\xff":
+            return "image/jpeg"
+        return None
+
+    if extension == "png":
+        if data.startswith(b"\x89PNG\r\n\x1a\n"):
+            return "image/png"
+        return None
+
+    if extension == "webp":
+        if len(data) >= 12 and data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+            return "image/webp"
+        return None
+
+    if extension == "docx":
+        try:
+            with zipfile.ZipFile(io.BytesIO(data), "r") as archive:
+                names = set(archive.namelist())
+                if (
+                    "[Content_Types].xml" in names
+                    and "word/document.xml" in names
+                ):
+                    return (
+                        "application/vnd.openxmlformats-officedocument."
+                        "wordprocessingml.document"
+                    )
+        except (zipfile.BadZipFile, OSError, ValueError):
+            pass
+        return None
+
+    if extension == "doc":
+        ole_signature = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
+        word_document_marker = "WordDocument".encode("utf-16le")
+        table_0_marker = "0Table".encode("utf-16le")
+        table_1_marker = "1Table".encode("utf-16le")
+
+        if (
+            data.startswith(ole_signature)
+            and word_document_marker in data
+            and (table_0_marker in data or table_1_marker in data)
+        ):
+            return "application/msword"
+        return None
+
+    return None
+
+
 def validate_employee_document(file_storage, document_type):
-    """Validate an uploaded Week 5 employee document."""
+    """
+    Validate an uploaded Week 5 employee document.
+
+    Returns (error_message, detected_mime_type).  The MIME type is determined
+    from the actual file content and never trusted from the client request.
+    """
     if document_type not in ALLOWED_DOCUMENT_TYPES:
-        return "Please select a valid document type."
+        return "Please select a valid document type.", None
 
     if not file_storage or not file_storage.filename:
-        return "Please select a document to upload."
+        return "Please select a document to upload.", None
 
     original_name = secure_filename(file_storage.filename)
     if not original_name or "." not in original_name:
-        return "The selected file must have a valid file extension."
+        return "The selected file must have a valid file extension.", None
 
     extension = original_name.rsplit(".", 1)[1].lower()
     allowed_extensions = DOCUMENT_TYPE_EXTENSIONS.get(document_type, set())
 
     if extension not in allowed_extensions:
         allowed_display = ", ".join(sorted(ext.upper() for ext in allowed_extensions))
-        return f"{document_type} must use one of these file types: {allowed_display}."
+        return (
+            f"{document_type} must use one of these file types: {allowed_display}.",
+            None,
+        )
 
     position = file_storage.stream.tell()
     file_storage.stream.seek(0, 2)
@@ -429,11 +521,21 @@ def validate_employee_document(file_storage, document_type):
     file_storage.stream.seek(position)
 
     if size <= 0:
-        return "The selected document is empty."
-    if size > MAX_EMPLOYEE_DOCUMENT_BYTES:
-        return "Employee documents must not exceed 10 MB."
+        return "The selected document is empty.", None
 
-    return None
+    if size > MAX_EMPLOYEE_DOCUMENT_BYTES:
+        return "Employee documents must not exceed 10 MB.", None
+
+    detected_mime = detect_employee_document_mime(file_storage, extension)
+
+    if not detected_mime:
+        return (
+            f"The uploaded file content does not match the .{extension.upper()} "
+            "file type. Please upload a genuine file rather than a renamed file.",
+            None,
+        )
+
+    return None, detected_mime
 
 
 def save_employee_document(file_storage):
@@ -1414,7 +1516,9 @@ def upload_employee_document():
         flash("Please select a valid employee.", "error")
         return redirect(url_for("employee_documents_page"))
 
-    validation_error = validate_employee_document(file_storage, document_type)
+    validation_error, detected_mime_type = validate_employee_document(
+        file_storage, document_type
+    )
     if validation_error:
         flash(validation_error, "error")
         return redirect(url_for("employee_documents_page", employee_id=employee_id))
@@ -1444,7 +1548,8 @@ def upload_employee_document():
         stored_filename, original_filename = save_employee_document(file_storage)
 
         file_size = (DOCUMENT_UPLOAD_FOLDER / stored_filename).stat().st_size
-        mime_type = str(file_storage.mimetype or "application/octet-stream")[:100]
+        # Store the server-detected MIME type, never the client-provided value.
+        mime_type = str(detected_mime_type or "application/octet-stream")[:100]
 
         cursor.execute(
             """

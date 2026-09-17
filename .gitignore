@@ -1,30 +1,24 @@
-# Environment variables and secrets
-.env
-.env.*
-!.env.example
-
-# Python cache
+# Python
 __pycache__/
 *.py[cod]
-*.pyc
 *.pyo
 
-# Virtual environments
+# Virtual environment
 venv/
 .venv/
-env/
+
+# Environment variables
+.env
 
 # VS Code
 .vscode/
 
-# JetBrains
-.idea/
-
-# Testing and logs
-.pytest_cache/
-*.log
-
-# Operating system files
+# OS files
 .DS_Store
 Thumbs.db
-Desktop.ini
+
+# Runtime employee uploads
+backend/uploads/
+
+# Logs
+*.log
