@@ -1031,6 +1031,13 @@ def display_value(value):
     return str(value)
 
 
+@app.errorhandler(413)
+def request_entity_too_large(_error):
+    """Show a user-friendly message when an upload exceeds the request-size limit."""
+    flash("The selected file is too large. Please upload a smaller file.", "error")
+    return redirect(request.referrer or url_for("dashboard"))
+
+
 # ---------------------------------------------------------
 # WEBSITE ROUTES
 # ---------------------------------------------------------
@@ -2429,7 +2436,10 @@ def review_leave_request_page(leave_id, decision):
             f"employee: {leave_request['first_name']} {leave_request['last_name']}; "
             f"type: {leave_request['leave_type']}; {leave_request['start_date']} to {leave_request['end_date']}",
         )
-        flash(f"Leave request {new_status.lower()} successfully.", "success")
+        flash(
+            f"Leave request {new_status.lower()} successfully.",
+            "success" if new_status == "Approved" else "warning",
+        )
     except Error as error:
         flash(f"Unable to review leave request: {error}", "error")
     finally:
@@ -2633,7 +2643,10 @@ def toggle_user_active(user_id):
             "User modified",
             f"User ID: {user_id}; username: {user['username']}; account status: {'Active' if new_status else 'Inactive'}",
         )
-        flash("User activated successfully." if new_status else "User deactivated successfully.", "success")
+        flash(
+            "User activated successfully." if new_status else "User deactivated successfully.",
+            "success" if new_status else "warning",
+        )
     except Error as error:
         flash(f"Unable to change account status: {error}", "error")
     finally:
@@ -2918,6 +2931,8 @@ def login():
 
             if request.is_json:
                 return jsonify({"message": "Login successful", "username": user["username"], "role": role})
+
+            flash(f"Welcome back, {user['username']}.", "success")
             return redirect(url_for("dashboard"))
 
         message = "Invalid username or password."
@@ -2946,6 +2961,8 @@ def logout():
 
     if request.method == "POST" and request.is_json:
         return jsonify({"message": "Logout successful"})
+
+    flash("You have been logged out successfully.", "info")
     return redirect(url_for("login_page"))
 
 

@@ -1,0 +1,192 @@
+<style>
+    .notification-stack {
+        margin: 18px 0;
+        display: grid;
+        gap: 10px;
+    }
+
+    .notification {
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 13px 46px 13px 14px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        line-height: 1.45;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, .04);
+    }
+
+    .notification-success {
+        background: #d1e7dd;
+        border-color: #badbcc;
+        color: #0f5132;
+    }
+
+    .notification-warning {
+        background: #fff3cd;
+        border-color: #ffecb5;
+        color: #664d03;
+    }
+
+    .notification-error {
+        background: #f8d7da;
+        border-color: #f5c2c7;
+        color: #842029;
+    }
+
+    .notification-info {
+        background: #cff4fc;
+        border-color: #b6effb;
+        color: #055160;
+    }
+
+    .notification-icon {
+        font-weight: bold;
+        min-width: 20px;
+        text-align: center;
+    }
+
+    .notification-content {
+        flex: 1;
+    }
+
+    .notification-title {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 2px;
+    }
+
+    .notification-close {
+        position: absolute;
+        top: 8px;
+        right: 10px;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font-size: 22px;
+        line-height: 1;
+        cursor: pointer;
+        opacity: .65;
+    }
+
+    .notification-close:hover {
+        opacity: 1;
+    }
+</style>
+
+{% set notification_messages = get_flashed_messages(with_categories=true) %}
+
+{% if notification_messages or error %}
+
+<div class="notification-stack" aria-live="polite" aria-atomic="true">
+
+    {% for category, message in notification_messages %}
+
+        {% set level = category if category in ['success', 'warning', 'error', 'info'] else 'info' %}
+
+        <div class="notification notification-{{ level }}" role="alert">
+
+            <div class="notification-icon">
+                {% if level == 'success' %}
+                    ✓
+                {% elif level == 'warning' %}
+                    ⚠
+                {% elif level == 'error' %}
+                    ✕
+                {% else %}
+                    i
+                {% endif %}
+            </div>
+
+            <div class="notification-content">
+
+                <span class="notification-title">
+
+                    {% if level == 'success' %}
+                        Success
+                    {% elif level == 'warning' %}
+                        Warning
+                    {% elif level == 'error' %}
+                        Error
+                    {% else %}
+                        Information
+                    {% endif %}
+
+                </span>
+
+                {{ message }}
+
+            </div>
+
+            <button
+                type="button"
+                class="notification-close"
+                aria-label="Dismiss notification"
+                onclick="this.parentElement.remove();">
+
+                ×
+
+            </button>
+
+        </div>
+
+    {% endfor %}
+
+
+    {% if error %}
+
+        <div class="notification notification-error" role="alert">
+
+            <div class="notification-icon">
+                ✕
+            </div>
+
+            <div class="notification-content">
+
+                <span class="notification-title">
+                    Error
+                </span>
+
+                {{ error }}
+
+            </div>
+
+            <button
+                type="button"
+                class="notification-close"
+                aria-label="Dismiss notification"
+                onclick="this.parentElement.remove();">
+
+                ×
+
+            </button>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+{% endif %}
+
+
+<script>
+    window.addEventListener("DOMContentLoaded", function () {
+
+        document.querySelectorAll(
+            ".notification-success, .notification-info"
+        ).forEach(function (item) {
+
+            window.setTimeout(function () {
+
+                if (item && item.parentElement) {
+                    item.remove();
+                }
+
+            }, 6000);
+
+        });
+
+    });
+</script>

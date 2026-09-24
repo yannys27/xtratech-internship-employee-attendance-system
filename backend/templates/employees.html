@@ -100,25 +100,6 @@
             margin-top: 5px;
         }
 
-        .flash-success {
-            background: #d1e7dd;
-            color: #0f5132;
-            border: 1px solid #badbcc;
-            padding: 12px;
-            border-radius: 6px;
-            margin-top: 18px;
-        }
-
-        .flash-error,
-        .error {
-            background: #f8d7da;
-            color: #842029;
-            border: 1px solid #f5c2c7;
-            padding: 12px;
-            border-radius: 6px;
-            margin-top: 18px;
-        }
-
         table {
             width: 100%;
             border-collapse: collapse;
@@ -217,23 +198,11 @@
 
 <div class="container">
 
+    {% include "_notifications.html" %}
+
     <a class="button" href="/dashboard">
         Back to Dashboard
     </a>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% for category, message in messages %}
-            <div class="flash-{{ category }}">
-                {{ message }}
-            </div>
-        {% endfor %}
-    {% endwith %}
-
-    {% if error %}
-        <div class="error">
-            {{ error }}
-        </div>
-    {% endif %}
 
     <div class="panel">
 
@@ -274,9 +243,7 @@
                 <div>
                     <label>Employment Status *</label>
 
-                    <select
-                        name="employment_status"
-                        required>
+                    <select name="employment_status" required>
 
                         {% for status in employment_statuses %}
                             <option value="{{ status }}">
@@ -289,48 +256,28 @@
 
                 <div>
                     <label>First Name *</label>
-
-                    <input
-                        type="text"
-                        name="first_name"
-                        maxlength="50"
-                        required>
+                    <input type="text" name="first_name" maxlength="50" required>
                 </div>
 
                 <div>
                     <label>Last Name *</label>
-
-                    <input
-                        type="text"
-                        name="last_name"
-                        maxlength="50"
-                        required>
+                    <input type="text" name="last_name" maxlength="50" required>
                 </div>
 
                 <div>
                     <label>Date of Birth *</label>
-
-                    <input
-                        type="date"
-                        name="date_of_birth"
-                        required>
+                    <input type="date" name="date_of_birth" required>
                 </div>
 
                 <div>
                     <label>Gender *</label>
 
-                    <select
-                        name="gender"
-                        required>
+                    <select name="gender" required>
 
-                        <option value="">
-                            Select gender
-                        </option>
+                        <option value="">Select gender</option>
 
                         {% for gender in genders %}
-                            <option value="{{ gender }}">
-                                {{ gender }}
-                            </option>
+                            <option value="{{ gender }}">{{ gender }}</option>
                         {% endfor %}
 
                     </select>
@@ -349,34 +296,20 @@
 
                 <div>
                     <label>Email Address *</label>
-
-                    <input
-                        type="email"
-                        name="email"
-                        maxlength="100"
-                        required>
+                    <input type="email" name="email" maxlength="100" required>
                 </div>
 
                 <div>
                     <label>Job Position *</label>
-
-                    <input
-                        type="text"
-                        name="job_position"
-                        maxlength="100"
-                        required>
+                    <input type="text" name="job_position" maxlength="100" required>
                 </div>
 
                 <div>
                     <label>Department *</label>
 
-                    <select
-                        name="department_id"
-                        required>
+                    <select name="department_id" required>
 
-                        <option value="">
-                            Select department
-                        </option>
+                        <option value="">Select department</option>
 
                         {% for department in departments %}
                             <option value="{{ department.department_id }}">
@@ -389,11 +322,7 @@
 
                 <div>
                     <label>Hire Date *</label>
-
-                    <input
-                        type="date"
-                        name="hire_date"
-                        required>
+                    <input type="date" name="hire_date" required>
                 </div>
 
                 <div class="full">
@@ -430,12 +359,8 @@
 
             <div style="margin-top:18px;">
 
-                <button
-                    class="button green"
-                    type="submit">
-
+                <button class="button green" type="submit">
                     Create Employee
-
                 </button>
 
             </div>
@@ -525,15 +450,11 @@
 
                         {% if employee.employment_status == 'Inactive' %}
 
-                            <span class="badge inactive">
-                                Inactive
-                            </span>
+                            <span class="badge inactive">Inactive</span>
 
                         {% else %}
 
-                            <span class="badge active">
-                                Active
-                            </span>
+                            <span class="badge active">Active</span>
 
                         {% endif %}
 
@@ -556,9 +477,7 @@
                 {% else %}
 
                 <tr>
-                    <td colspan="8">
-                        No employees found.
-                    </td>
+                    <td colspan="8">No employees found.</td>
                 </tr>
 
                 {% endfor %}

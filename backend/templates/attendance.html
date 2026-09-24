@@ -1,12 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Attendance Management</title>
 
     <style>
-        * { box-sizing: border-box; }
+
+        * {
+            box-sizing: border-box;
+        }
 
         body {
             font-family: Arial, Helvetica, sans-serif;
@@ -24,7 +30,9 @@
             align-items: center;
         }
 
-        .navbar h2 { margin: 0; }
+        .navbar h2 {
+            margin: 0;
+        }
 
         .container {
             max-width: 1500px;
@@ -44,11 +52,25 @@
             font-size: 14px;
         }
 
-        .button:hover { opacity: .92; }
-        .green { background: #198754; }
-        .orange { background: #fd7e14; }
-        .red { background: #dc3545; }
-        .gray { background: #6c757d; }
+        .button:hover {
+            opacity: .92;
+        }
+
+        .green {
+            background: #198754;
+        }
+
+        .orange {
+            background: #fd7e14;
+        }
+
+        .red {
+            background: #dc3545;
+        }
+
+        .gray {
+            background: #6c757d;
+        }
 
         .panel {
             background: white;
@@ -109,29 +131,10 @@
             font: inherit;
         }
 
-        .note {
+        .note,
+        .muted {
             color: #666;
             font-size: 13px;
-            margin-top: 8px;
-        }
-
-        .flash-success {
-            background: #d1e7dd;
-            color: #0f5132;
-            border: 1px solid #badbcc;
-            padding: 12px;
-            border-radius: 6px;
-            margin-top: 18px;
-        }
-
-        .flash-error,
-        .error {
-            background: #f8d7da;
-            color: #842029;
-            border: 1px solid #f5c2c7;
-            padding: 12px;
-            border-radius: 6px;
-            margin-top: 18px;
         }
 
         table {
@@ -149,7 +152,9 @@
             vertical-align: middle;
         }
 
-        th { background: #eef2f6; }
+        th {
+            background: #eef2f6;
+        }
 
         .badge {
             display: inline-block;
@@ -160,91 +165,133 @@
             font-weight: bold;
         }
 
-        .present { background: #198754; }
-        .late { background: #fd7e14; }
-        .absent { background: #dc3545; }
-        .weekend { background: #6f42c1; }
+        .present {
+            background: #198754;
+        }
 
-        .metric-good { color: #198754; font-weight: bold; }
-        .metric-warning { color: #dc3545; font-weight: bold; }
-        .muted { color: #666; }
+        .late {
+            background: #fd7e14;
+        }
 
-        .inline-form { display: inline; }
+        .absent {
+            background: #dc3545;
+        }
+
+        .weekend {
+            background: #6f42c1;
+        }
+
+        .metric-good {
+            color: #198754;
+            font-weight: bold;
+        }
+
+        .metric-warning {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .inline-form {
+            display: inline;
+        }
 
         @media (max-width: 1000px) {
+
             .quick-grid,
             .record-grid {
                 grid-template-columns: 1fr 1fr;
             }
 
-            .panel { overflow-x: auto; }
+            .panel {
+                overflow-x: auto;
+            }
+
         }
 
         @media (max-width: 650px) {
+
             .quick-grid,
             .record-grid {
                 grid-template-columns: 1fr;
             }
 
-            .container { padding: 18px; }
+            .container {
+                padding: 18px;
+            }
 
             .navbar {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 8px;
             }
+
         }
+
     </style>
+
 </head>
 
 <body>
 
 <div class="navbar">
+
     <h2>Attendance Management</h2>
-    <div><strong>{{ username }}</strong> — {{ role }}</div>
+
+    <div>
+        <strong>{{ username }}</strong> — {{ role }}
+    </div>
+
 </div>
+
 
 <div class="container">
 
-    <a class="button" href="/dashboard">Back to Dashboard</a>
+    {% include "_notifications.html" %}
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% for category, message in messages %}
-            <div class="flash-{{ category }}">{{ message }}</div>
-        {% endfor %}
-    {% endwith %}
+    <a class="button" href="/dashboard">
+        Back to Dashboard
+    </a>
 
-    {% if error %}
-        <div class="error">{{ error }}</div>
-    {% endif %}
 
     <div class="panel">
+
         <h2>Automatic Attendance Rules</h2>
 
         <p>
-            The system now calculates attendance status, working hours,
+            The system calculates attendance status, working hours,
             late arrival, early departure and weekend attendance automatically.
         </p>
 
         <div class="schedule">
 
             <div class="schedule-box">
+
                 <strong>Scheduled Start</strong>
+
                 {{ scheduled_start }}
+
             </div>
 
             <div class="schedule-box">
+
                 <strong>Scheduled End</strong>
+
                 {{ scheduled_end }}
+
             </div>
 
             <div class="schedule-box">
+
                 <strong>Status Rule</strong>
+
                 After {{ scheduled_start }} = Late
+
             </div>
 
         </div>
+
     </div>
+
 
     <div class="panel">
 
@@ -262,9 +309,7 @@
 
                 <select name="employee_id" required>
 
-                    <option value="">
-                        Select employee
-                    </option>
+                    <option value="">Select employee</option>
 
                     {% for employee in employees %}
 
@@ -305,15 +350,14 @@
 
     </div>
 
+
     <div class="panel">
 
-        <h2>
-            Add Historical / Manual-Time Attendance Record
-        </h2>
+        <h2>Add Historical / Manual-Time Attendance Record</h2>
 
         <p class="muted">
-            You enter only the employee, date and times.
-            Do not select a status — the system calculates it automatically.
+            Enter the employee, date and times.
+            The system calculates the attendance status automatically.
         </p>
 
         <form
@@ -323,17 +367,11 @@
 
             <div>
 
-                <label>
-                    Employee *
-                </label>
+                <label>Employee *</label>
 
-                <select
-                    name="employee_id"
-                    required>
+                <select name="employee_id" required>
 
-                    <option value="">
-                        Select employee
-                    </option>
+                    <option value="">Select employee</option>
 
                     {% for employee in employees %}
 
@@ -354,9 +392,7 @@
 
             <div>
 
-                <label>
-                    Date *
-                </label>
+                <label>Date *</label>
 
                 <input
                     type="date"
@@ -368,9 +404,7 @@
 
             <div>
 
-                <label>
-                    Check-In
-                </label>
+                <label>Check-In</label>
 
                 <input
                     type="time"
@@ -380,9 +414,7 @@
 
             <div>
 
-                <label>
-                    Check-Out
-                </label>
+                <label>Check-Out</label>
 
                 <input
                     type="time"
@@ -402,40 +434,27 @@
 
     </div>
 
+
     <div class="panel">
 
-        <h2>
-            Attendance Records
-        </h2>
+        <h2>Attendance Records</h2>
 
         <table>
 
             <thead>
 
                 <tr>
-
                     <th>ID</th>
-
                     <th>Employee</th>
-
                     <th>Date</th>
-
                     <th>Check In</th>
-
                     <th>Check Out</th>
-
                     <th>Total Hours</th>
-
                     <th>Late Arrival</th>
-
                     <th>Early Departure</th>
-
                     <th>Status</th>
-
                     <th>Weekend</th>
-
                     <th>Action</th>
-
                 </tr>
 
             </thead>
@@ -446,44 +465,30 @@
 
                 <tr>
 
-                    <td>
-                        {{ record.attendance_id }}
-                    </td>
+                    <td>{{ record.attendance_id }}</td>
 
                     <td>
-
                         {{ record.first_name }}
                         {{ record.last_name }}
-
                     </td>
 
-                    <td>
-                        {{ record.date }}
-                    </td>
+                    <td>{{ record.date }}</td>
 
-                    <td>
-                        {{ record.check_in_time or '-' }}
-                    </td>
+                    <td>{{ record.check_in_time or '-' }}</td>
 
-                    <td>
-                        {{ record.check_out_time or '-' }}
-                    </td>
+                    <td>{{ record.check_out_time or '-' }}</td>
 
                     <td>
 
                         {% if record.total_working_hours is not none %}
 
                             <span class="metric-good">
-
                                 {{ record.total_working_hours }} h
-
                             </span>
 
                         {% else %}
 
-                            <span class="muted">
-                                -
-                            </span>
+                            <span class="muted">-</span>
 
                         {% endif %}
 
@@ -491,16 +496,10 @@
 
                     <td>
 
-                        {% if
-                            record.late_arrival_minutes
-                            and
-                            record.late_arrival_minutes > 0
-                        %}
+                        {% if record.late_arrival_minutes and record.late_arrival_minutes > 0 %}
 
                             <span class="metric-warning">
-
                                 {{ record.late_arrival_minutes }} min
-
                             </span>
 
                         {% else %}
@@ -515,16 +514,10 @@
 
                     <td>
 
-                        {% if
-                            record.early_departure_minutes
-                            and
-                            record.early_departure_minutes > 0
-                        %}
+                        {% if record.early_departure_minutes and record.early_departure_minutes > 0 %}
 
                             <span class="metric-warning">
-
                                 {{ record.early_departure_minutes }} min
-
                             </span>
 
                         {% else %}
@@ -541,21 +534,15 @@
 
                         {% if record.status == 'Late' %}
 
-                            <span class="badge late">
-                                Late
-                            </span>
+                            <span class="badge late">Late</span>
 
                         {% elif record.status == 'Absent' %}
 
-                            <span class="badge absent">
-                                Absent
-                            </span>
+                            <span class="badge absent">Absent</span>
 
                         {% else %}
 
-                            <span class="badge present">
-                                Present
-                            </span>
+                            <span class="badge present">Present</span>
 
                         {% endif %}
 
@@ -565,9 +552,7 @@
 
                         {% if record.weekend_attendance %}
 
-                            <span class="badge weekend">
-                                Yes
-                            </span>
+                            <span class="badge weekend">Yes</span>
 
                         {% else %}
 
@@ -602,11 +587,9 @@
                 {% else %}
 
                 <tr>
-
                     <td colspan="11">
                         No attendance records found.
                     </td>
-
                 </tr>
 
                 {% endfor %}

@@ -23,11 +23,17 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
+        }
+
+        .page {
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
         }
 
         .login-box {
-            width: 360px;
+            width: 100%;
             background: white;
             padding: 35px;
             border-radius: 10px;
@@ -75,50 +81,47 @@
             background: #0056b3;
         }
 
-        .error {
-            color: red;
-            text-align: center;
-            margin-bottom: 15px;
-            font-weight: bold;
-        }
-
     </style>
 
 </head>
 
 <body>
 
-<div class="login-box">
+<div class="page">
 
-    <h1>Employee Attendance System</h1>
+    {% include "_notifications.html" %}
 
-    {% if error %}
-        <div class="error">{{ error }}</div>
-    {% endif %}
+    <div class="login-box">
 
-    <form action="/login" method="POST">
+        <h1>Employee Attendance System</h1>
 
-        <label>Username</label>
+        <form
+            action="/login"
+            method="POST">
 
-        <input
-            type="text"
-            name="username"
-            placeholder="Enter username"
-            required>
+            <label>Username</label>
 
-        <label>Password</label>
+            <input
+                type="text"
+                name="username"
+                placeholder="Enter username"
+                required>
 
-        <input
-            type="password"
-            name="password"
-            placeholder="Enter password"
-            required>
+            <label>Password</label>
 
-        <button type="submit">
-            Login
-        </button>
+            <input
+                type="password"
+                name="password"
+                placeholder="Enter password"
+                required>
 
-    </form>
+            <button type="submit">
+                Login
+            </button>
+
+        </form>
+
+    </div>
 
 </div>
 

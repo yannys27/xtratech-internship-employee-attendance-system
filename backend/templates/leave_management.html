@@ -110,25 +110,6 @@
             resize: vertical;
         }
 
-        .flash-success {
-            background: #d1e7dd;
-            color: #0f5132;
-            border: 1px solid #badbcc;
-            padding: 12px;
-            border-radius: 6px;
-            margin-top: 18px;
-        }
-
-        .flash-error,
-        .error {
-            background: #f8d7da;
-            color: #842029;
-            border: 1px solid #f5c2c7;
-            padding: 12px;
-            border-radius: 6px;
-            margin-top: 18px;
-        }
-
         .muted {
             color: #666;
         }
@@ -223,9 +204,7 @@
 
 <div class="navbar">
 
-    <h2>
-        Leave Management
-    </h2>
+    <h2>Leave Management</h2>
 
     <div>
         <strong>{{ username }}</strong> — {{ role }}
@@ -236,42 +215,16 @@
 
 <div class="container">
 
-    <a
-        class="button"
-        href="/dashboard">
+    {% include "_notifications.html" %}
 
+    <a class="button" href="/dashboard">
         Back to Dashboard
-
     </a>
-
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-
-        {% for category, message in messages %}
-
-            <div class="flash-{{ category }}">
-                {{ message }}
-            </div>
-
-        {% endfor %}
-
-    {% endwith %}
-
-
-    {% if error %}
-
-        <div class="error">
-            {{ error }}
-        </div>
-
-    {% endif %}
 
 
     <div class="panel">
 
-        <h2>
-            Create Leave Request
-        </h2>
+        <h2>Create Leave Request</h2>
 
         <p class="muted">
             New requests are created with <strong>Pending</strong> status.
@@ -285,20 +238,13 @@
 
             <div class="form-grid">
 
-
                 <div>
 
-                    <label>
-                        Employee *
-                    </label>
+                    <label>Employee *</label>
 
-                    <select
-                        name="employee_id"
-                        required>
+                    <select name="employee_id" required>
 
-                        <option value="">
-                            Select employee
-                        </option>
+                        <option value="">Select employee</option>
 
                         {% for employee in employees %}
 
@@ -320,13 +266,9 @@
 
                 <div>
 
-                    <label>
-                        Leave Type *
-                    </label>
+                    <label>Leave Type *</label>
 
-                    <select
-                        name="leave_type"
-                        required>
+                    <select name="leave_type" required>
 
                         <option value="">
                             Select leave type
@@ -347,9 +289,7 @@
 
                 <div>
 
-                    <label>
-                        Start Date *
-                    </label>
+                    <label>Start Date *</label>
 
                     <input
                         type="date"
@@ -361,9 +301,7 @@
 
                 <div>
 
-                    <label>
-                        End Date *
-                    </label>
+                    <label>End Date *</label>
 
                     <input
                         type="date"
@@ -375,9 +313,7 @@
 
                 <div class="full">
 
-                    <label>
-                        Reason *
-                    </label>
+                    <label>Reason *</label>
 
                     <textarea
                         name="reason"
@@ -386,7 +322,6 @@
                         required></textarea>
 
                 </div>
-
 
             </div>
 
@@ -410,37 +345,23 @@
 
     <div class="panel">
 
-        <h2>
-            Leave Requests
-        </h2>
-
+        <h2>Leave Requests</h2>
 
         <table>
 
             <thead>
 
                 <tr>
-
                     <th>ID</th>
-
                     <th>Employee</th>
-
                     <th>Leave Type</th>
-
                     <th>Start</th>
-
                     <th>End</th>
-
                     <th>Days</th>
-
                     <th>Reason</th>
-
                     <th>Status</th>
-
                     <th>Requested By</th>
-
                     <th>Review</th>
-
                 </tr>
 
             </thead>
@@ -448,16 +369,11 @@
 
             <tbody>
 
-
                 {% for leave in leave_requests %}
 
                 <tr>
 
-
-                    <td>
-                        {{ leave.leave_id }}
-                    </td>
-
+                    <td>{{ leave.leave_id }}</td>
 
                     <td>
 
@@ -474,31 +390,17 @@
 
                     </td>
 
+                    <td>{{ leave.leave_type }}</td>
 
-                    <td>
-                        {{ leave.leave_type }}
-                    </td>
+                    <td>{{ leave.start_date }}</td>
 
+                    <td>{{ leave.end_date }}</td>
 
-                    <td>
-                        {{ leave.start_date }}
-                    </td>
-
-
-                    <td>
-                        {{ leave.end_date }}
-                    </td>
-
-
-                    <td>
-                        {{ leave.total_days }}
-                    </td>
-
+                    <td>{{ leave.total_days }}</td>
 
                     <td class="reason">
                         {{ leave.reason }}
                     </td>
-
 
                     <td>
 
@@ -524,7 +426,6 @@
 
                     </td>
 
-
                     <td>
 
                         {{ leave.requested_by or '-' }}
@@ -540,11 +441,7 @@
 
                     <td>
 
-                        {% if
-                            leave.status == 'Pending'
-                            and
-                            role in ['Administrator', 'HR Officer']
-                        %}
+                        {% if leave.status == 'Pending' and role in ['Administrator', 'HR Officer'] %}
 
                             <div class="actions">
 
@@ -604,24 +501,18 @@
 
                     </td>
 
-
                 </tr>
 
 
                 {% else %}
 
-
                 <tr>
-
                     <td colspan="10">
                         No leave requests have been created yet.
                     </td>
-
                 </tr>
 
-
                 {% endfor %}
-
 
             </tbody>
 

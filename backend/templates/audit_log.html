@@ -9,9 +9,7 @@
         name="viewport"
         content="width=device-width, initial-scale=1.0">
 
-    <title>
-        Audit Log
-    </title>
+    <title>Audit Log</title>
 
     <style>
 
@@ -20,34 +18,19 @@
         }
 
         body {
-
-            font-family:
-                Arial,
-                Helvetica,
-                sans-serif;
-
+            font-family: Arial, Helvetica, sans-serif;
             margin: 0;
-
             background: #f4f6f9;
-
             color: #222;
-
         }
 
         .navbar {
-
             background: #007BFF;
-
             color: white;
-
             padding: 18px 30px;
-
             display: flex;
-
             justify-content: space-between;
-
             align-items: center;
-
         }
 
         .navbar h2 {
@@ -55,35 +38,21 @@
         }
 
         .container {
-
             max-width: 1550px;
-
             margin: auto;
-
             padding: 30px;
-
         }
 
         .button {
-
             display: inline-block;
-
             padding: 10px 15px;
-
             background: #007BFF;
-
             color: white;
-
             text-decoration: none;
-
             border: 0;
-
             border-radius: 6px;
-
             cursor: pointer;
-
             font: inherit;
-
         }
 
         .button:hover {
@@ -99,25 +68,15 @@
         }
 
         .panel {
-
             background: white;
-
             padding: 22px;
-
             margin-top: 22px;
-
             border-radius: 10px;
-
-            box-shadow:
-                0 2px 10px
-                rgba(0,0,0,.08);
-
+            box-shadow: 0 2px 10px rgba(0,0,0,.08);
         }
 
         .filters {
-
             display: grid;
-
             grid-template-columns:
                 1.5fr
                 1fr
@@ -128,125 +87,54 @@
                 1fr;
 
             gap: 12px;
-
             align-items: end;
-
         }
 
         label {
-
             display: block;
-
             font-weight: bold;
-
             margin-bottom: 6px;
-
         }
 
         input,
         select {
-
             width: 100%;
-
             padding: 10px;
-
-            border:
-                1px solid #cfd4da;
-
+            border: 1px solid #cfd4da;
             border-radius: 5px;
-
             background: white;
-
             font: inherit;
-
         }
 
         .filter-actions {
-
             display: flex;
-
             gap: 10px;
-
             flex-wrap: wrap;
-
             margin-top: 16px;
-
-        }
-
-        .flash-success {
-
-            background: #d1e7dd;
-
-            color: #0f5132;
-
-            border:
-                1px solid #badbcc;
-
-            padding: 12px;
-
-            border-radius: 6px;
-
-            margin-top: 18px;
-
-        }
-
-        .flash-error,
-        .error {
-
-            background: #f8d7da;
-
-            color: #842029;
-
-            border:
-                1px solid #f5c2c7;
-
-            padding: 12px;
-
-            border-radius: 6px;
-
-            margin-top: 18px;
-
         }
 
         .summary {
-
             color: #666;
-
-            margin:
-                8px 0 0;
-
+            margin: 8px 0 0;
         }
 
         .table-wrap {
-
             overflow-x: auto;
-
         }
 
         table {
-
             width: 100%;
-
             border-collapse: collapse;
-
             margin-top: 15px;
-
             min-width: 1450px;
-
         }
 
         th,
         td {
-
             padding: 11px;
-
-            border-bottom:
-                1px solid #ddd;
-
+            border-bottom: 1px solid #ddd;
             text-align: left;
-
             vertical-align: top;
-
         }
 
         th {
@@ -254,77 +142,47 @@
         }
 
         .details {
-
             max-width: 360px;
-
             white-space: normal;
-
             overflow-wrap: anywhere;
-
         }
 
         .badge {
-
             display: inline-block;
-
             padding: 5px 9px;
-
             border-radius: 14px;
-
             background: #007BFF;
-
             color: white;
-
             font-size: 12px;
-
             font-weight: bold;
-
         }
 
         .muted {
             color: #666;
         }
 
-
-        @media
-        (max-width: 1100px) {
+        @media (max-width: 1100px) {
 
             .filters {
-
-                grid-template-columns:
-                    1fr
-                    1fr
-                    1fr;
-
+                grid-template-columns: 1fr 1fr 1fr;
             }
 
         }
 
-
-        @media
-        (max-width: 700px) {
+        @media (max-width: 700px) {
 
             .filters {
-
-                grid-template-columns:
-                    1fr;
-
+                grid-template-columns: 1fr;
             }
 
             .container {
-
                 padding: 18px;
-
             }
 
             .navbar {
-
                 flex-direction: column;
-
                 align-items: flex-start;
-
                 gap: 8px;
-
             }
 
         }
@@ -339,20 +197,10 @@
 
 <div class="navbar">
 
-    <h2>
-        Audit Log
-    </h2>
+    <h2>Audit Log</h2>
 
     <div>
-
-        <strong>
-            {{ username }}
-        </strong>
-
-        —
-
-        {{ role }}
-
+        <strong>{{ username }}</strong> — {{ role }}
     </div>
 
 </div>
@@ -360,6 +208,7 @@
 
 <div class="container">
 
+    {% include "_notifications.html" %}
 
     <a
         class="button"
@@ -370,58 +219,14 @@
     </a>
 
 
-    {% with messages =
-        get_flashed_messages(
-        with_categories=true) %}
-
-
-        {% for category, message
-            in messages %}
-
-
-            <div
-                class="flash-{{ category }}">
-
-                {{ message }}
-
-            </div>
-
-
-        {% endfor %}
-
-
-    {% endwith %}
-
-
-    {% if error %}
-
-
-        <div class="error">
-
-            {{ error }}
-
-        </div>
-
-
-    {% endif %}
-
-
     <div class="panel">
 
-
-        <h2>
-            Search and Filter Audit Records
-        </h2>
-
+        <h2>Search and Filter Audit Records</h2>
 
         <p class="muted">
-
             Only Administrators can access this page.
-
-            Search by user, role, action,
-            IP address, affected record,
-            module or date.
-
+            Search by user, role, action, IP address,
+            affected record, module or date.
         </p>
 
 
@@ -429,26 +234,18 @@
             method="GET"
             action="/audit-log">
 
-
             <div class="filters">
 
 
                 <div>
 
-                    <label>
-                        Search
-                    </label>
+                    <label>Search</label>
 
                     <input
-
                         type="text"
-
                         name="q"
-
                         maxlength="150"
-
                         value="{{ filters.q or '' }}"
-
                         placeholder="Search audit records">
 
                 </div>
@@ -456,45 +253,27 @@
 
                 <div>
 
-                    <label>
-                        User
-                    </label>
+                    <label>User</label>
 
-
-                    <select
-                        name="username">
-
+                    <select name="username">
 
                         <option value="">
                             All users
                         </option>
 
-
                         {% for item in usernames %}
-
 
                             <option
                                 value="{{ item }}"
-
-                                {% if
-                                    filters.username
-                                    ==
-                                    item
-                                %}
-
+                                {% if filters.username == item %}
                                     selected
-
                                 {% endif %}>
-
 
                                 {{ item }}
 
-
                             </option>
 
-
                         {% endfor %}
-
 
                     </select>
 
@@ -503,45 +282,27 @@
 
                 <div>
 
-                    <label>
-                        Role
-                    </label>
+                    <label>Role</label>
 
-
-                    <select
-                        name="role">
-
+                    <select name="role">
 
                         <option value="">
                             All roles
                         </option>
 
-
                         {% for item in roles %}
-
 
                             <option
                                 value="{{ item }}"
-
-                                {% if
-                                    filters.role
-                                    ==
-                                    item
-                                %}
-
+                                {% if filters.role == item %}
                                     selected
-
                                 {% endif %}>
-
 
                                 {{ item }}
 
-
                             </option>
 
-
                         {% endfor %}
-
 
                     </select>
 
@@ -550,45 +311,27 @@
 
                 <div>
 
-                    <label>
-                        Module
-                    </label>
+                    <label>Module</label>
 
-
-                    <select
-                        name="module">
-
+                    <select name="module">
 
                         <option value="">
                             All modules
                         </option>
 
-
                         {% for item in modules %}
-
 
                             <option
                                 value="{{ item }}"
-
-                                {% if
-                                    filters.module
-                                    ==
-                                    item
-                                %}
-
+                                {% if filters.module == item %}
                                     selected
-
                                 {% endif %}>
-
 
                                 {{ item }}
 
-
                             </option>
 
-
                         {% endfor %}
-
 
                     </select>
 
@@ -597,45 +340,27 @@
 
                 <div>
 
-                    <label>
-                        Action
-                    </label>
+                    <label>Action</label>
 
-
-                    <select
-                        name="action">
-
+                    <select name="action">
 
                         <option value="">
                             All actions
                         </option>
 
-
                         {% for item in actions %}
-
 
                             <option
                                 value="{{ item }}"
-
-                                {% if
-                                    filters.action
-                                    ==
-                                    item
-                                %}
-
+                                {% if filters.action == item %}
                                     selected
-
                                 {% endif %}>
-
 
                                 {{ item }}
 
-
                             </option>
 
-
                         {% endfor %}
-
 
                     </select>
 
@@ -644,9 +369,7 @@
 
                 <div>
 
-                    <label>
-                        From Date
-                    </label>
+                    <label>From Date</label>
 
                     <input
                         type="date"
@@ -658,9 +381,7 @@
 
                 <div>
 
-                    <label>
-                        To Date
-                    </label>
+                    <label>To Date</label>
 
                     <input
                         type="date"
@@ -669,12 +390,10 @@
 
                 </div>
 
-
             </div>
 
 
             <div class="filter-actions">
-
 
                 <button
                     class="button green"
@@ -684,7 +403,6 @@
 
                 </button>
 
-
                 <a
                     class="button gray"
                     href="/audit-log">
@@ -693,277 +411,142 @@
 
                 </a>
 
-
             </div>
 
-
         </form>
-
 
     </div>
 
 
     <div class="panel">
 
-
-        <h2>
-            Audit Records
-        </h2>
-
+        <h2>Audit Records</h2>
 
         <p class="summary">
-
-            {{ logs|length }}
-            record(s) displayed.
-
+            {{ logs|length }} record(s) displayed.
             Maximum 500 results.
-
         </p>
 
 
         <div class="table-wrap">
 
-
             <table>
-
 
                 <thead>
 
-
                     <tr>
-
-
-                        <th>
-                            ID
-                        </th>
-
-
-                        <th>
-                            User
-                        </th>
-
-
-                        <th>
-                            Role
-                        </th>
-
-
-                        <th>
-                            Action Performed
-                        </th>
-
-
-                        <th>
-                            Date
-                        </th>
-
-
-                        <th>
-                            Time
-                        </th>
-
-
-                        <th>
-                            IP Address
-                        </th>
-
-
-                        <th>
-                            Affected Record
-                        </th>
-
-
-                        <th>
-                            Module
-                        </th>
-
-
-                        <th>
-                            Details
-                        </th>
-
-
+                        <th>ID</th>
+                        <th>User</th>
+                        <th>Role</th>
+                        <th>Action Performed</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>IP Address</th>
+                        <th>Affected Record</th>
+                        <th>Module</th>
+                        <th>Details</th>
                     </tr>
-
 
                 </thead>
 
 
                 <tbody>
 
-
                     {% for log in logs %}
 
-
                         <tr>
-
 
                             <td>
                                 {{ log.audit_id }}
                             </td>
 
-
                             <td>
-
                                 <strong>
                                     {{ log.username }}
                                 </strong>
-
                             </td>
 
-
                             <td>
-
                                 {{ log.role or 'Not recorded' }}
-
                             </td>
 
-
                             <td>
-
                                 {{ log.action }}
-
                             </td>
 
-
                             <td>
-
 
                                 {% if log.created_at %}
 
-
-                                    {{
-                                        log.created_at.strftime(
-                                            '%Y-%m-%d'
-                                        )
-                                    }}
-
+                                    {{ log.created_at.strftime('%Y-%m-%d') }}
 
                                 {% else %}
 
-
                                     -
-
 
                                 {% endif %}
 
-
                             </td>
 
-
                             <td>
-
 
                                 {% if log.created_at %}
 
-
-                                    {{
-                                        log.created_at.strftime(
-                                            '%H:%M:%S'
-                                        )
-                                    }}
-
+                                    {{ log.created_at.strftime('%H:%M:%S') }}
 
                                 {% else %}
 
-
                                     -
-
 
                                 {% endif %}
 
-
                             </td>
 
-
                             <td>
-
-                                {{
-                                    log.ip_address
-                                    or
-                                    'Not recorded'
-                                }}
-
+                                {{ log.ip_address or 'Not recorded' }}
                             </td>
 
-
                             <td>
-
-                                {{
-                                    log.affected_record
-                                    or
-                                    'N/A'
-                                }}
-
+                                {{ log.affected_record or 'N/A' }}
                             </td>
 
-
                             <td>
-
 
                                 <span class="badge">
-
-                                    {{
-                                        log.module
-                                        or
-                                        'Legacy'
-                                    }}
-
+                                    {{ log.module or 'Legacy' }}
                                 </span>
 
-
                             </td>
-
 
                             <td class="details">
-
-                                {{
-                                    log.details
-                                    or
-                                    '-'
-                                }}
-
+                                {{ log.details or '-' }}
                             </td>
-
 
                         </tr>
 
 
                     {% else %}
 
-
                         <tr>
 
-
                             <td colspan="10">
-
-                                No audit records match
-                                the selected filters.
-
+                                No audit records match the selected filters.
                             </td>
-
 
                         </tr>
 
-
                     {% endfor %}
-
 
                 </tbody>
 
-
             </table>
-
 
         </div>
 
-
     </div>
-
 
 </div>
 
-
 </body>
 
-</html> 
+</html>

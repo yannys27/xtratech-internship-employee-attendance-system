@@ -2,12 +2,15 @@
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Employee Documents</title>
 
     <style>
+
         * {
             box-sizing: border-box;
         }
@@ -110,25 +113,6 @@
             font-size: 13px;
         }
 
-        .flash-success {
-            background: #d1e7dd;
-            color: #0f5132;
-            border: 1px solid #badbcc;
-            padding: 12px;
-            border-radius: 6px;
-            margin-top: 18px;
-        }
-
-        .flash-error,
-        .error {
-            background: #f8d7da;
-            color: #842029;
-            border: 1px solid #f5c2c7;
-            padding: 12px;
-            border-radius: 6px;
-            margin-top: 18px;
-        }
-
         .actions {
             display: flex;
             gap: 7px;
@@ -169,13 +153,16 @@
         }
 
         @media (max-width: 950px) {
+
             .form-grid,
             .filter-grid {
                 grid-template-columns: 1fr 1fr;
             }
+
         }
 
         @media (max-width: 620px) {
+
             .form-grid,
             .filter-grid {
                 grid-template-columns: 1fr;
@@ -190,8 +177,11 @@
                 align-items: flex-start;
                 gap: 8px;
             }
+
         }
+
     </style>
+
 </head>
 
 <body>
@@ -206,7 +196,10 @@
 
 </div>
 
+
 <div class="container">
+
+    {% include "_notifications.html" %}
 
     <a
         class="button"
@@ -216,36 +209,16 @@
 
     </a>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-
-        {% for category, message in messages %}
-
-            <div class="flash-{{ category }}">
-                {{ message }}
-            </div>
-
-        {% endfor %}
-
-    {% endwith %}
-
-    {% if error %}
-
-        <div class="error">
-            {{ error }}
-        </div>
-
-    {% endif %}
 
     <div class="panel">
 
-        <h2>
-            Upload Employee Document
-        </h2>
+        <h2>Upload Employee Document</h2>
 
         <p class="muted">
             Documents are associated with an employee and can only be accessed by
             Administrators and HR Officers.
         </p>
+
 
         <form
             action="/employee-documents/upload"
@@ -253,6 +226,7 @@
             enctype="multipart/form-data">
 
             <div class="form-grid">
+
 
                 <div>
 
@@ -287,11 +261,10 @@
 
                 </div>
 
+
                 <div>
 
-                    <label>
-                        Document Type *
-                    </label>
+                    <label>Document Type *</label>
 
                     <select
                         name="document_type"
@@ -313,11 +286,10 @@
 
                 </div>
 
+
                 <div>
 
-                    <label>
-                        Document *
-                    </label>
+                    <label>Document *</label>
 
                     <input
                         type="file"
@@ -330,6 +302,7 @@
                     </div>
 
                 </div>
+
 
                 <button
                     class="button green"
@@ -345,11 +318,10 @@
 
     </div>
 
+
     <div class="panel">
 
-        <h2>
-            Filter Documents
-        </h2>
+        <h2>Filter Documents</h2>
 
         <form
             method="GET"
@@ -359,9 +331,7 @@
 
                 <div>
 
-                    <label>
-                        Employee
-                    </label>
+                    <label>Employee</label>
 
                     <select name="employee_id">
 
@@ -390,11 +360,10 @@
 
                 </div>
 
+
                 <div>
 
-                    <label>
-                        Document Type
-                    </label>
+                    <label>Document Type</label>
 
                     <select name="document_type">
 
@@ -419,6 +388,7 @@
                     </select>
 
                 </div>
+
 
                 <div class="actions">
 
@@ -446,15 +416,15 @@
 
     </div>
 
+
     <div class="panel">
 
-        <h2>
-            Stored Documents
-        </h2>
+        <h2>Stored Documents</h2>
 
         <p class="muted">
             {{ documents|length }} document(s) displayed.
         </p>
+
 
         <div class="table-wrap">
 
@@ -475,6 +445,7 @@
 
                 </thead>
 
+
                 <tbody>
 
                     {% for document in documents %}
@@ -484,6 +455,7 @@
                             <td>
                                 {{ document.document_id }}
                             </td>
+
 
                             <td>
 
@@ -500,6 +472,7 @@
 
                             </td>
 
+
                             <td>
 
                                 <span class="badge">
@@ -508,9 +481,11 @@
 
                             </td>
 
+
                             <td>
                                 {{ document.original_filename }}
                             </td>
+
 
                             <td>
 
@@ -526,13 +501,16 @@
 
                             </td>
 
+
                             <td>
                                 {{ document.uploaded_by or '-' }}
                             </td>
 
+
                             <td>
                                 {{ document.created_at }}
                             </td>
+
 
                             <td>
 
@@ -547,6 +525,7 @@
 
                                     </a>
 
+
                                     <a
                                         class="button green"
                                         href="{{ url_for('download_employee_document', document_id=document.document_id) }}">
@@ -554,6 +533,7 @@
                                         Download
 
                                     </a>
+
 
                                     <form
                                         action="{{ url_for('delete_employee_document', document_id=document.document_id) }}"
@@ -575,6 +555,7 @@
                             </td>
 
                         </tr>
+
 
                     {% else %}
 
@@ -599,4 +580,5 @@
 </div>
 
 </body>
+
 </html>
