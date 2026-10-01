@@ -2,15 +2,15 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Dashboard</title>
+    <title>Dashboard Analytics</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 
     <style>
-
         * {
             box-sizing: border-box;
         }
@@ -43,7 +43,7 @@
 
         .container {
             padding: 30px;
-            max-width: 1250px;
+            max-width: 1450px;
             margin: auto;
         }
 
@@ -73,37 +73,92 @@
             background: #b52a37;
         }
 
+        .section-title {
+            margin: 0 0 16px;
+        }
+
         .cards {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
             gap: 18px;
-            margin-bottom: 30px;
+            margin-bottom: 28px;
         }
 
         .card {
             background: white;
-            padding: 22px;
+            padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,.08);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .08);
+            border-top: 4px solid #007BFF;
         }
 
         .card h3 {
             margin: 0 0 10px;
-            font-size: 16px;
+            font-size: 15px;
             color: #666;
         }
 
         .number {
-            font-size: 34px;
+            font-size: 32px;
             font-weight: bold;
             color: #007BFF;
+        }
+
+        .card.warning {
+            border-top-color: #fd7e14;
+        }
+
+        .card.warning .number {
+            color: #fd7e14;
+        }
+
+        .card.danger {
+            border-top-color: #dc3545;
+        }
+
+        .card.danger .number {
+            color: #dc3545;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 22px;
+            margin-bottom: 28px;
         }
 
         .panel {
             background: white;
             padding: 22px;
             border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,.08);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .08);
+        }
+
+        .panel h2 {
+            margin-top: 0;
+        }
+
+        .chart-wrap {
+            position: relative;
+            min-height: 320px;
+        }
+
+        .chart-note {
+            color: #666;
+            font-size: 13px;
+            margin-top: -5px;
+            margin-bottom: 16px;
+        }
+
+        .no-data {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 260px;
+            color: #777;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px dashed #cfd4da;
         }
 
         table {
@@ -127,8 +182,29 @@
             font-weight: bold;
         }
 
-        @media (max-width: 650px) {
+        .status-present {
+            color: #198754;
+        }
 
+        .status-late {
+            color: #fd7e14;
+        }
+
+        .status-absent {
+            color: #dc3545;
+        }
+
+        .recent-panel {
+            overflow-x: auto;
+        }
+
+        @media (max-width: 1000px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 650px) {
             .navbar {
                 align-items: flex-start;
                 flex-direction: column;
@@ -142,15 +218,14 @@
                 padding: 18px;
             }
 
-            .panel {
-                overflow-x: auto;
+            .chart-wrap {
+                min-height: 270px;
             }
-
         }
-
     </style>
 
 </head>
+
 
 <body>
 
@@ -194,6 +269,7 @@
             Leave Management
         </a>
 
+
         {% if role in ['Administrator', 'HR Officer'] %}
 
             <a href="/employee-documents">
@@ -201,6 +277,7 @@
             </a>
 
         {% endif %}
+
 
         <a href="/reports-page">
             Reports
@@ -231,6 +308,11 @@
     </div>
 
 
+    <h2 class="section-title">
+        Dashboard Analytics
+    </h2>
+
+
     <div class="cards">
 
         <div class="card">
@@ -249,7 +331,20 @@
         <div class="card">
 
             <h3>
-                Employees Present Today
+                Attendance Today
+            </h3>
+
+            <div class="number">
+                {{ stats.attendance_today }}
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <h3>
+                Present Today
             </h3>
 
             <div class="number">
@@ -262,7 +357,33 @@
         <div class="card">
 
             <h3>
-                Employees Absent Today
+                Weekly Attendance
+            </h3>
+
+            <div class="number">
+                {{ stats.weekly_attendance }}
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <h3>
+                Monthly Attendance
+            </h3>
+
+            <div class="number">
+                {{ stats.monthly_attendance }}
+            </div>
+
+        </div>
+
+
+        <div class="card danger">
+
+            <h3>
+                Currently Absent
             </h3>
 
             <div class="number">
@@ -272,14 +393,14 @@
         </div>
 
 
-        <div class="card">
+        <div class="card warning">
 
             <h3>
-                Attendance Records This Week
+                Currently Late
             </h3>
 
             <div class="number">
-                {{ stats.weekly_attendance }}
+                {{ stats.late_today }}
             </div>
 
         </div>
@@ -287,7 +408,131 @@
     </div>
 
 
-    <div class="panel">
+    <div class="charts-grid">
+
+        <div class="panel">
+
+            <h2>
+                Employees per Department
+            </h2>
+
+            <p class="chart-note">
+                Number of employees assigned to each department.
+            </p>
+
+
+            {% if analytics.department_values %}
+
+                <div class="chart-wrap">
+
+                    <canvas id="departmentChart"></canvas>
+
+                </div>
+
+            {% else %}
+
+                <div class="no-data">
+                    No department data available.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+
+        <div class="panel">
+
+            <h2>
+                Attendance Today
+            </h2>
+
+            <p class="chart-note">
+                Today's attendance status distribution.
+            </p>
+
+
+            {% if stats.attendance_today > 0 %}
+
+                <div class="chart-wrap">
+
+                    <canvas id="todayChart"></canvas>
+
+                </div>
+
+            {% else %}
+
+                <div class="no-data">
+                    No attendance records for today.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+
+        <div class="panel">
+
+            <h2>
+                Weekly Attendance
+            </h2>
+
+            <p class="chart-note">
+                Attendance records during the current week.
+            </p>
+
+
+            {% if analytics.weekly_values %}
+
+                <div class="chart-wrap">
+
+                    <canvas id="weeklyChart"></canvas>
+
+                </div>
+
+            {% else %}
+
+                <div class="no-data">
+                    No attendance records for this week.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+
+        <div class="panel">
+
+            <h2>
+                Monthly Attendance
+            </h2>
+
+            <p class="chart-note">
+                Daily attendance records during the current month.
+            </p>
+
+
+            {% if analytics.monthly_values %}
+
+                <div class="chart-wrap">
+
+                    <canvas id="monthlyChart"></canvas>
+
+                </div>
+
+            {% else %}
+
+                <div class="no-data">
+                    No attendance records for this month.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <div class="panel recent-panel">
 
         <h2>
             Recent Attendance Activities
@@ -298,49 +543,64 @@
 
             <table>
 
-                <tr>
-
-                    <th>Employee</th>
-
-                    <th>Date</th>
-
-                    <th>Check In</th>
-
-                    <th>Check Out</th>
-
-                    <th>Status</th>
-
-                </tr>
-
-
-                {% for record in recent_activities %}
+                <thead>
 
                     <tr>
-
-                        <td>
-                            {{ record.first_name }}
-                            {{ record.last_name }}
-                        </td>
-
-                        <td>
-                            {{ record.date }}
-                        </td>
-
-                        <td>
-                            {{ record.check_in_time or '-' }}
-                        </td>
-
-                        <td>
-                            {{ record.check_out_time or '-' }}
-                        </td>
-
-                        <td class="status">
-                            {{ record.status }}
-                        </td>
-
+                        <th>Employee</th>
+                        <th>Date</th>
+                        <th>Check In</th>
+                        <th>Check Out</th>
+                        <th>Status</th>
                     </tr>
 
-                {% endfor %}
+                </thead>
+
+
+                <tbody>
+
+                    {% for record in recent_activities %}
+
+                        <tr>
+
+                            <td>
+                                {{ record.first_name }}
+                                {{ record.last_name }}
+                            </td>
+
+                            <td>
+                                {{ record.date }}
+                            </td>
+
+                            <td>
+                                {{ record.check_in_time or '-' }}
+                            </td>
+
+                            <td>
+                                {{ record.check_out_time or '-' }}
+                            </td>
+
+                            <td
+                                class="
+                                    status
+
+                                    {% if record.status == 'Present' %}
+                                        status-present
+                                    {% elif record.status == 'Late' %}
+                                        status-late
+                                    {% elif record.status == 'Absent' %}
+                                        status-absent
+                                    {% endif %}
+                                ">
+
+                                {{ record.status }}
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
 
             </table>
 
@@ -355,6 +615,333 @@
     </div>
 
 </div>
+
+
+<script id="analytics-data" type="application/json">
+{{ analytics | tojson }}
+</script>
+
+
+<script>
+
+    const analyticsElement =
+        document.getElementById("analytics-data");
+
+    const analytics =
+        JSON.parse(
+            analyticsElement.textContent
+        );
+
+
+    Chart.defaults.font.family =
+        "Arial, Helvetica, sans-serif";
+
+    Chart.defaults.color =
+        "#444";
+
+
+    function makeChart(id, config) {
+
+        const canvas =
+            document.getElementById(id);
+
+        if (
+            !canvas ||
+            typeof Chart === "undefined"
+        ) {
+            return;
+        }
+
+        new Chart(
+            canvas,
+            config
+        );
+    }
+
+
+    // -----------------------------------------------------
+    // EMPLOYEES PER DEPARTMENT
+    // -----------------------------------------------------
+
+    makeChart(
+        "departmentChart",
+        {
+            type: "bar",
+
+            data: {
+
+                labels:
+                    analytics.department_labels,
+
+                datasets: [
+                    {
+                        label:
+                            "Employees",
+
+                        data:
+                            analytics.department_values,
+
+                        backgroundColor:
+                            "rgba(13, 110, 253, 0.65)",
+
+                        borderColor:
+                            "rgba(13, 110, 253, 1)",
+
+                        borderWidth:
+                            1
+                    }
+                ]
+            },
+
+
+            options: {
+
+                responsive:
+                    true,
+
+                maintainAspectRatio:
+                    false,
+
+                scales: {
+
+                    y: {
+
+                        beginAtZero:
+                            true,
+
+                        ticks: {
+
+                            precision:
+                                0
+
+                        }
+
+                    }
+
+                },
+
+
+                plugins: {
+
+                    legend: {
+
+                        display:
+                            false
+
+                    }
+
+                }
+
+            }
+        }
+    );
+
+
+    // -----------------------------------------------------
+    // ATTENDANCE TODAY
+    // -----------------------------------------------------
+
+    makeChart(
+        "todayChart",
+        {
+            type:
+                "doughnut",
+
+            data: {
+
+                labels:
+                    analytics.today_status_labels,
+
+                datasets: [
+                    {
+
+                        data:
+                            analytics.today_status_values,
+
+                        backgroundColor: [
+
+                            "rgba(25, 135, 84, 0.75)",
+
+                            "rgba(253, 126, 20, 0.75)",
+
+                            "rgba(220, 53, 69, 0.75)"
+
+                        ],
+
+                        borderWidth:
+                            1
+
+                    }
+                ]
+            },
+
+
+            options: {
+
+                responsive:
+                    true,
+
+                maintainAspectRatio:
+                    false,
+
+                plugins: {
+
+                    legend: {
+
+                        position:
+                            "bottom"
+
+                    }
+
+                }
+
+            }
+        }
+    );
+
+
+    // -----------------------------------------------------
+    // WEEKLY ATTENDANCE
+    // -----------------------------------------------------
+
+    makeChart(
+        "weeklyChart",
+        {
+            type:
+                "line",
+
+            data: {
+
+                labels:
+                    analytics.weekly_labels,
+
+                datasets: [
+                    {
+
+                        label:
+                            "Attendance Records",
+
+                        data:
+                            analytics.weekly_values,
+
+                        borderColor:
+                            "rgba(13, 110, 253, 1)",
+
+                        backgroundColor:
+                            "rgba(13, 110, 253, 0.15)",
+
+                        fill:
+                            true,
+
+                        tension:
+                            0.25
+
+                    }
+                ]
+            },
+
+
+            options: {
+
+                responsive:
+                    true,
+
+                maintainAspectRatio:
+                    false,
+
+                scales: {
+
+                    y: {
+
+                        beginAtZero:
+                            true,
+
+                        ticks: {
+
+                            precision:
+                                0
+
+                        }
+
+                    }
+
+                }
+
+            }
+        }
+    );
+
+
+    // -----------------------------------------------------
+    // MONTHLY ATTENDANCE
+    // -----------------------------------------------------
+
+    makeChart(
+        "monthlyChart",
+        {
+            type:
+                "bar",
+
+            data: {
+
+                labels:
+                    analytics.monthly_labels,
+
+                datasets: [
+                    {
+
+                        label:
+                            "Attendance Records",
+
+                        data:
+                            analytics.monthly_values,
+
+                        backgroundColor:
+                            "rgba(111, 66, 193, 0.65)",
+
+                        borderColor:
+                            "rgba(111, 66, 193, 1)",
+
+                        borderWidth:
+                            1
+
+                    }
+                ]
+            },
+
+
+            options: {
+
+                responsive:
+                    true,
+
+                maintainAspectRatio:
+                    false,
+
+                scales: {
+
+                    y: {
+
+                        beginAtZero:
+                            true,
+
+                        ticks: {
+
+                            precision:
+                                0
+
+                        }
+
+                    }
+
+                }
+
+            }
+        }
+    );
+
+</script>
+
 
 </body>
 
